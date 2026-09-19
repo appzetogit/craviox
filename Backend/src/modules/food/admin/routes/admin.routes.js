@@ -22,6 +22,7 @@ import { isId } from '../../../../utils/helpers.js';
 import { requireAdminPermission, requireAnyAdminPermission } from '../../../../core/roles/adminPermission.middleware.js';
 import * as driverRegField from '../../delivery/controllers/driverRegistrationField.controller.js';
 import * as cashbackSettings from '../controllers/cashbackSettings.controller.js';
+import * as membershipController from '../../membership/membership.controller.js';
 import * as restaurantAppBanner from '../controllers/restaurantAppBanner.controller.js';
 
 const router = express.Router();
@@ -77,7 +78,7 @@ const resolveSectionFromRequest = (path = '', method = '') => {
         path.startsWith('/zones')
     ) return 'restaurant_management';
     if (path.startsWith('/categories') || path.startsWith('/addons') || path.startsWith('/foods')) return 'food_management';
-    if (path.startsWith('/offers')) return 'promotions_management';
+    if (path.startsWith('/offers') || path.startsWith('/memberships')) return 'promotions_management';
     if (path.startsWith('/orders') || path.startsWith('/order-detect-delivery')) return 'order_management';
     if (path.startsWith('/delivery')) return 'delivery_management';
     if (path.startsWith('/withdrawals')) return 'transaction_management';
@@ -355,6 +356,16 @@ router.delete('/restaurant-app-banners/:id', restaurantAppBanner.deleteBannerCon
 // ----- Cashback Settings -----
 router.get('/cashback-settings', cashbackSettings.getCashbackSettingsController);
 router.put('/cashback-settings', cashbackSettings.upsertCashbackSettingsController);
+
+// ----- Memberships (Gold / Platinum / ... plans) -----
+router.get('/memberships/plans', membershipController.adminListPlans);
+router.post('/memberships/plans', membershipController.adminCreatePlan);
+router.patch('/memberships/plans/:planId', membershipController.adminUpdatePlan);
+router.delete('/memberships/plans/:planId', membershipController.adminDeletePlan);
+router.get('/memberships/stats', membershipController.adminStats);
+router.get('/memberships/members', membershipController.adminListMembers);
+router.post('/memberships/members/grant', membershipController.adminGrant);
+router.patch('/memberships/members/:membershipId/cancel', membershipController.adminCancel);
 
 // ----- Referral Settings -----
 router.get('/referral-settings', adminController.getReferralSettings);

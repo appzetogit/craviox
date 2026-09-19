@@ -38,6 +38,7 @@ const ADMIN_PERMISSION_PATH_MAP = [
   { prefix: "/food/admin/addons", section: "food_management" },
   { prefix: "/food/admin/foods", section: "food_management" },
   { prefix: "/food/admin/offers", section: "promotions_management" },
+  { prefix: "/food/admin/memberships", section: "promotions_management" },
   { prefix: "/food/admin/orders", section: "order_management" },
   { prefix: "/food/admin/order-detect-delivery", section: "order_management" },
   { prefix: "/food/admin/sidebar-badges", section: "dashboard" },

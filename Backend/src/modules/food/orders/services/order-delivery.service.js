@@ -999,6 +999,11 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
     .then(({ awardOrderCashback }) => awardOrderCashback(row.id))
     .catch((e) => logger.warn(`cashback award hook failed: ${e?.message || e}`));
 
+  // Membership cashback perk. Idempotent per order, never throws.
+  import('../../membership/membership.service.js')
+    .then(({ awardMembershipCashback }) => awardMembershipCashback(row.id))
+    .catch((e) => logger.warn(`membership cashback hook failed: ${e?.message || e}`));
+
   const ledgerKind =
     payMethod === 'cash' && prevPayStatus === 'cod_pending'
       ? 'cod_marked_paid_on_delivery'

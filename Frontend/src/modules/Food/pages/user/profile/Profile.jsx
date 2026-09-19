@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ChevronRight,
+  Crown,
   Wallet,
   Tag,
   User,
@@ -83,6 +84,7 @@ export default function Profile() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [referralReward, setReferralReward] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [membership, setMembership] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Trigger web push registration when profile mounts to ensure FCM token is saved
@@ -272,6 +274,19 @@ export default function Profile() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    userAPI
+      .getMyMembership()
+      .then((res) => {
+        if (mounted) setMembership(res?.data?.data || null);
+      })
+      .catch(() => { });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const refId =
     userProfile?._id || userProfile?.id || userProfile?.referralCode || "";
   const referralLink = refId
@@ -410,6 +425,31 @@ export default function Profile() {
 
         {/* Account Options */}
         <div className="space-y-2 mb-3 mt-3">
+          <Link to="/food/user/membership" className="block">
+            <Card className="py-0 rounded-xl shadow-sm border-0 overflow-hidden cursor-pointer">
+              <CardContent
+                className="p-4 flex items-center justify-between text-white"
+                style={{ background: `linear-gradient(135deg, ${membership?.current?.badgeColor || "#D4A017"}, #1f2937)` }}>
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 rounded-full p-2">
+                    <Crown className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold">
+                      {membership?.isMember ? `${membership.current.planName} Member` : `Join ${companyName} Gold`}
+                    </p>
+                    <p className="text-xs opacity-90">
+                      {membership?.isMember
+                        ? `Valid till ${new Date(membership.current.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}${membership.totalSavings > 0 ? ` · Saved ₹${Number(membership.totalSavings).toFixed(0)}` : ""}`
+                        : "Free delivery, extra discounts & no surge fee"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 opacity-80" />
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link to="/user/wallet" className="block">
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}

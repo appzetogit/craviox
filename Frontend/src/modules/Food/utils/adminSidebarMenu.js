@@ -106,6 +106,12 @@ export const adminSidebarMenu = [
         path: "/admin/food/coupons",
         icon: "Gift",
       },
+      {
+        type: "link",
+        label: "Memberships (Gold)",
+        path: "/admin/food/memberships",
+        icon: "Award",
+      },
     ],
   },
   {

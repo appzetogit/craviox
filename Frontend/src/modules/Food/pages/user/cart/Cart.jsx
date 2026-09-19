@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
-import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Banknote, Zap, CheckCircle2, MessageCircle, Send, Mail, Copy, Home, Briefcase, Pencil, Square, Receipt, ShoppingCart, DoorOpen, PhoneOff, BellOff } from "lucide-react"
+import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Banknote, Zap, CheckCircle2, MessageCircle, Send, Mail, Copy, Home, Briefcase, Pencil, Square, Receipt, ShoppingCart, DoorOpen, PhoneOff, BellOff, Crown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 
@@ -220,8 +220,10 @@ const buildEffectiveCartPricing = ({
     const serverTax = Number(pricing.tax)
     const serverDiscount = Number(pricing.discount)
     const serverTotal = Number(pricing.total)
+    // A membership that waives surge leaves quickDeliveryFee at 0 on purpose —
+    // do not fall back to the configured fee then.
     const quickDeliveryFee =
-      deliveryMode === "quick"
+      deliveryMode === "quick" && !(Number(pricing?.membership?.surgeWaived) > 0)
         ? Number(pricing.quickDeliveryFee) || getConfiguredQuickDeliveryFee(feeSettings)
         : 0
 
@@ -244,6 +246,9 @@ const buildEffectiveCartPricing = ({
       deliveryFeeBreakdown: pricing?.deliveryFeeBreakdown || null,
       appliedCoupon: pricing?.appliedCoupon || appliedCoupon || null,
       deliveryMode: deliveryMode === "quick" ? "quick" : "basic",
+      membershipDiscount: Number(pricing.membershipDiscount) || 0,
+      membership: pricing?.membership || null,
+      membershipUpsell: pricing?.membershipUpsell || null,
     }
   }
 
@@ -1498,6 +1503,9 @@ export default function Cart() {
   const discount = effectivePricing.discount
   const totalBeforeDiscount = subtotal + deliveryFee + deliveryFeeGst + platformFee + gstCharges
   const total = effectivePricing.total
+  const membershipDiscount = effectivePricing.membershipDiscount || 0
+  const membershipPerks = effectivePricing.membership?.eligible ? effectivePricing.membership : null
+  const membershipUpsell = effectivePricing.membershipUpsell || null
   const savings = effectivePricing.savings
   const itemDiscountAmount = appliedCoupon && discount > 0 ? discount : 0
   const otherSavings = Math.max(0, savings - itemDiscountAmount)
@@ -3063,6 +3071,33 @@ export default function Cart() {
                   </div>
                 )}
               </div>
+{/* Membership: savings for members, upsell for everyone else */}
+              {membershipPerks && membershipPerks.totalSavings > 0 && (
+                <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-3 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-yellow-950/20">
+                  <Crown className="h-5 w-5 shrink-0 text-amber-600" />
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                    {membershipPerks.planName} benefits applied. You save {RUPEE_SYMBOL}{Number(membershipPerks.totalSavings).toFixed(0)} on this order
+                  </p>
+                </div>
+              )}
+              {!membershipPerks && membershipUpsell && membershipUpsell.savings > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/food/user/membership")}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-3 text-left dark:border-amber-900/50 dark:from-amber-950/30 dark:to-yellow-950/20"
+                >
+                  <Crown className="h-5 w-5 shrink-0 text-amber-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Save {RUPEE_SYMBOL}{Number(membershipUpsell.savings).toFixed(0)} on this order with {membershipUpsell.planName}
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300/80">
+                      Join for {RUPEE_SYMBOL}{Number(membershipUpsell.price).toFixed(0)} / {membershipUpsell.durationDays} days
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-amber-600" />
+                </button>
+              )}
 {/* Bill Details */}
               <div className="bg-white dark:bg-[#1a1a1a] px-4 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
                 <button
@@ -3101,6 +3136,12 @@ export default function Cart() {
                         <span className="text-[#008078]">-{RUPEE_SYMBOL}{itemDiscountAmount.toFixed(2)}</span>
                       </div>
                     )}
+                    {membershipDiscount > 0 && (
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-amber-700 dark:text-amber-400 border-b border-dotted border-amber-300">{membershipPerks?.planName || "Member"} Discount</span>
+                        <span className="text-amber-700 dark:text-amber-400">-{RUPEE_SYMBOL}{membershipDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex items-start justify-between gap-3 text-sm">
                       <div className="min-w-0 flex-1">
                         <span className="text-gray-600 dark:text-gray-400 border-b border-dotted border-gray-300">
@@ -3123,7 +3164,9 @@ export default function Cart() {
                         }`}
                       >
                         {deliveryFee === 0
-                          ? "FREE"
+                          ? membershipPerks?.deliveryFeeWaived > 0
+                            ? `FREE with ${membershipPerks.planName}`
+                            : "FREE"
                           : `${RUPEE_SYMBOL}${getDeliveryFeeTotal(deliveryFee, deliveryFeeGst).toFixed(2)}`}
                       </span>
                     </div>

@@ -43,6 +43,8 @@ import {
     getRefundHistoryController
 } from '../controllers/cashback.controller.js';
 
+import * as membershipController from '../../membership/membership.controller.js';
+
 const router = express.Router();
 
 router.get('/profile', getCurrentUserProfileController);
@@ -54,6 +56,13 @@ router.delete('/profile', deleteCurrentUserAccountController);
 router.get('/wallet', getUserWalletController);
 router.post('/wallet/topup/order', createWalletTopupOrderController);
 router.post('/wallet/topup/verify', verifyWalletTopupPaymentController);
+
+// Memberships (Bearer USER)
+router.get('/memberships/plans', membershipController.listPlansForUser);
+router.get('/memberships/me', membershipController.getMyMembership);
+router.post('/memberships/purchase/order', membershipController.createPurchaseOrder);
+router.post('/memberships/purchase/verify', membershipController.verifyPurchase);
+router.post('/memberships/purchase/wallet', membershipController.purchaseWithWallet);
 
 // Wallet sub-ledgers (both derived from the wallet/order records, no separate store)
 router.get('/cashback', getCashbackHistoryController);

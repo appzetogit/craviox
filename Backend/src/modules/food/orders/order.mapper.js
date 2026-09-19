@@ -96,6 +96,9 @@ export function toOrder(row) {
             restaurantCommission: money(row.restaurantCommission),
             discount: money(row.discount),
             couponCode: row.couponCode,
+            membershipDiscount: money(row.membershipDiscount),
+            membershipSavings: money(row.membershipSavings),
+            membershipId: row.membershipId ?? null,
             total: money(row.total),
             currency: row.currency,
             distanceKm: num(row.distanceKm),
@@ -290,7 +293,8 @@ export function fromOrder(input = {}) {
     if (pricing) {
         for (const key of ['subtotal', 'tax', 'packagingFee', 'deliveryFee', 'deliveryFeeGst',
                            'platformFee', 'quickDeliveryFee', 'deliveryMode', 'restaurantCommission',
-                           'discount', 'couponCode', 'total', 'currency', 'distanceKm',
+                           'discount', 'couponCode', 'membershipDiscount', 'membershipSavings',
+                           'membershipId', 'total', 'currency', 'distanceKm',
                            'roadDistanceKm', 'roadDurationMins']) {
             set(key, pricing[key]);
         }

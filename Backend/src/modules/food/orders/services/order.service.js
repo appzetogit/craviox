@@ -514,6 +514,9 @@ export async function createOrder(userId, dto) {
       couponCode: pricingResult.pricing?.couponCode
         ? String(pricingResult.pricing.couponCode).trim().toUpperCase()
         : null,
+      membershipDiscount: Number(pricingResult.pricing?.membershipDiscount) || 0,
+      membershipSavings: Number(pricingResult.pricing?.membershipSavings) || 0,
+      membershipId: pricingResult.pricing?.membershipId || null,
       total: Number(pricingResult.pricing?.total) || 0,
       currency: String(pricingResult.pricing?.currency || "INR"),
       distanceKm: Number.isFinite(Number(pricingResult.pricing?.distanceKm))

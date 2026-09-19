@@ -620,6 +620,7 @@ model FoodUser {
   refunds       Refund[]
   offerUsages   FoodOfferUsage[]
   safetyReports FoodSafetyEmergencyReport[]
+  memberships   FoodUserMembership[]
 
   @@index([referredById])
   @@index([isActive])
@@ -1272,6 +1273,13 @@ model FoodOrder {
   restaurantCommission Decimal      @default(0) @db.Decimal(14, 2)
   discount             Decimal      @default(0) @db.Decimal(14, 2)
   couponCode           String?      @db.VarChar(64)
+  /// Membership extra discount — kept apart from `discount` so the coupon
+  /// admin/restaurant split never touches it. Platform-funded.
+  membershipDiscount   Decimal      @default(0) @db.Decimal(14, 2)
+  /// Everything the membership waived or discounted on this order (delivery,
+  /// platform fee, surge, extra discount) — the "you saved ₹X" figure.
+  membershipSavings    Decimal      @default(0) @db.Decimal(14, 2)
+  membershipId         String?      @db.VarChar(24)
   total                Decimal      @db.Decimal(14, 2)
   currency             String       @default("INR") @db.VarChar(3)
   /// Straight-line restaurant ↔ customer km, used for fee calculation.
@@ -3319,4 +3327,105 @@ model FoodUnregisteredRestaurant {
 
   @@index([createdAt(sort: Desc)])
   @@map("food_unregistered_restaurants")
+}
+
+enum MembershipStatus {
+  active
+  cancelled
+  expired
+}
+
+enum MembershipSource {
+  razorpay
+  wallet
+  admin_grant
+}
+
+/// A paid membership tier (Gold, Platinum, Lite...) — created and edited by the
+/// admin. Perks combine Zomato Gold (free delivery, extra discount at partner
+/// restaurants) and Swiggy One (no surge, platform-fee waiver).
+model FoodMembershipPlan {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  name        String @db.VarChar(64)
+  tagline     String @default("") @db.VarChar(160)
+  description String @default("")
+  /// Hex colour for the badge / card accent.
+  badgeColor  String @default("#D4A017") @db.VarChar(16)
+
+  price         Decimal @db.Decimal(14, 2)
+  /// Struck-through price shown next to `price`. 0 = none.
+  originalPrice Decimal @default(0) @db.Decimal(14, 2)
+  durationDays  Int     @default(30)
+
+  // ── perks ──
+  freeDelivery          Boolean @default(true)
+  /// Subtotal needed for free delivery. 0 = any order.
+  freeDeliveryMinOrder  Decimal @default(0) @db.Decimal(14, 2)
+  /// Free delivery only within this distance. 0 = no limit.
+  freeDeliveryMaxKm     Decimal @default(0) @db.Decimal(8, 2)
+  /// Extra % off the item subtotal, on top of coupons.
+  extraDiscountPercent  Decimal @default(0) @db.Decimal(5, 2)
+  /// Cap per order in rupees. 0 = uncapped.
+  maxDiscountPerOrder   Decimal @default(0) @db.Decimal(14, 2)
+  /// Subtotal needed for the extra discount. 0 = any order.
+  discountMinOrder      Decimal @default(0) @db.Decimal(14, 2)
+  /// false → the extra discount is skipped when a coupon is applied.
+  stackWithCoupons      Boolean @default(true)
+  waivePlatformFee      Boolean @default(false)
+  /// No quick-delivery / peak surcharge.
+  waiveSurge            Boolean @default(false)
+  /// % of subtotal credited to the wallet on delivery.
+  cashbackPercent       Decimal @default(0) @db.Decimal(5, 2)
+  maxCashbackPerOrder   Decimal @default(0) @db.Decimal(14, 2)
+  /// all → every restaurant; selected → only `restaurantIds` (partner restaurants).
+  restaurantScope       RestaurantScope @default(all)
+  restaurantIds         String[]
+  /// Free-text perk bullets shown on the plan card ("Priority support", ...).
+  extraPerks            String[]
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships FoodUserMembership[]
+
+  @@index([isActive, sortOrder])
+  @@map("food_membership_plans")
+}
+
+/// One purchase / grant of a plan. Perks are snapshotted at purchase so later
+/// plan edits do not change what an existing member paid for.
+model FoodUserMembership {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  userId String @db.VarChar(24)
+  planId String @db.VarChar(24)
+
+  planName     String           @db.VarChar(64)
+  perks        Json
+  pricePaid    Decimal          @default(0) @db.Decimal(14, 2)
+  source       MembershipSource @default(razorpay)
+  status       MembershipStatus @default(active)
+  startsAt     DateTime
+  expiresAt    DateTime
+  /// Gateway order id / wallet txn key — unique so a replayed verify cannot
+  /// activate twice.
+  paymentRef   String?          @unique @db.VarChar(128)
+  grantedBy    String?          @db.VarChar(24)
+  note         String           @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user FoodUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan FoodMembershipPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId, status, expiresAt])
+  @@index([planId])
+  @@index([expiresAt])
+  @@map("food_user_memberships")
 }

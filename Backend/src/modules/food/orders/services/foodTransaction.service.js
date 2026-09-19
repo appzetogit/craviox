@@ -248,6 +248,9 @@ export async function createInitialTransaction(order) {
   }
   restaurantNet -= restaurantDiscountShare;
   platformNetProfit -= adminDiscountShare;
+  // Membership extra discount is platform-funded; waived fees are already absent
+  // from deliveryFee / platformFee.
+  platformNetProfit -= Number(order.membershipDiscount) || 0;
 
   restaurantNet = Math.round((Number(restaurantNet) || 0) * 100) / 100;
   platformNetProfit = Math.round((Number(platformNetProfit) || 0) * 100) / 100;

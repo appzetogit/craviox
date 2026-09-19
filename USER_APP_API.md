@@ -281,6 +281,22 @@ Read-only mirrors under `/v1/food/payments`: `/wallet/balance`,
 `/wallet/transactions`, `/orders/:orderId/payments`, `/orders/:orderId/transactions`,
 `/orders/:orderId/refunds`.
 
+### Memberships (Gold-style plans)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/v1/food/user/memberships/plans` | Active plans with their perks |
+| GET | `/v1/food/user/memberships/me` | `{ isMember, current, upcoming[], history[], totalSavings, ordersCount }` |
+| POST | `/v1/food/user/memberships/purchase/order` | `{ planId }` → Razorpay order |
+| POST | `/v1/food/user/memberships/purchase/verify` | `{ planId, razorpayOrderId, razorpayPaymentId, razorpaySignature }` |
+| POST | `/v1/food/user/memberships/purchase/wallet` | `{ planId, requestId }` — pay from wallet |
+
+A purchase made while a membership is running starts when that one ends.
+Perks are applied server-side in order pricing; the quote now also returns
+`pricing.membershipDiscount`, `pricing.membershipSavings`, `pricing.membership`
+(`{ planName, deliveryFeeWaived, platformFeeWaived, surgeWaived, extraDiscount, totalSavings, eligible }`)
+for members, and `pricing.membershipUpsell` (`{ planId, planName, price, savings }`) for non-members.
+
 ---
 
 ## 9. Profile & support — `/v1/food/user`

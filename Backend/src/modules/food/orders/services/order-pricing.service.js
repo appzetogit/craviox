@@ -1,4 +1,9 @@
 import { prisma } from '../../../../config/prisma.js';
+import {
+  bestPlanUpsell,
+  computeMembershipBenefits,
+  getActiveMembership,
+} from '../../membership/membership.service.js';
 import { isId } from '../../../../utils/helpers.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import {
@@ -432,7 +437,7 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
   const feeSettings = await loadActiveFeeSettings(pricingZoneId);
 
   const packagingFee = 0;
-  const platformFee = Number(feeSettings.platformFee || 0);
+  let platformFee = Number(feeSettings.platformFee || 0);
 
   let distanceKm = await getDeliveryDistanceKm(restaurant, deliveryAddress);
   const straightLineKm = calculateDistanceKm(restaurant, deliveryAddress);
@@ -455,7 +460,7 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
   }
 
   const deliveryFeeResult = resolveUserDeliveryFee(feeSettings, { subtotal, distanceKm });
-  const deliveryFee = round2(deliveryFeeResult.deliveryFee);
+  let deliveryFee = round2(deliveryFeeResult.deliveryFee);
   distanceKm = deliveryFeeResult.distanceKm ?? distanceKm;
 
   let discount = 0;
@@ -547,11 +552,57 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
     }
   }
 
-  // GST is charged on the post-discount item value (discount is already clamped to <= subtotal).
+  // Membership perks (free delivery, extra discount, platform-fee and surge
+  // waivers). Platform-funded; the rider's earning and restaurant payout are
+  // untouched. Non-members get an upsell quote for the best plan instead.
+  const isQuick = dto.deliveryMode === 'quick';
+  const quickSurcharge = Math.max(0, Number(feeSettings.quickDeliveryFee) || 0);
+  const benefitCtx = {
+    subtotal,
+    distanceKm,
+    restaurantId: dto.restaurantId,
+    deliveryFee,
+    platformFee,
+    surcharge: quickSurcharge,
+    isQuick,
+    couponDiscount: discount,
+    couponApplied: Boolean(appliedCoupon),
+  };
+  // A membership lookup failure must never block checkout — price without perks.
+  const membership = options.skipMembership
+    ? null
+    : await getActiveMembership(userId, at).catch(() => null);
+  let membershipInfo = null;
+  let membershipUpsell = null;
+  let membershipDiscount = 0;
+  let surgeWaived = 0;
+  if (membership) {
+    const b = computeMembershipBenefits(membership.perks, benefitCtx);
+    deliveryFee = round2(deliveryFee - b.deliveryFeeWaived);
+    platformFee = round2(platformFee - b.platformFeeWaived);
+    membershipDiscount = b.extraDiscount;
+    surgeWaived = b.surgeWaived;
+    membershipInfo = {
+      active: true,
+      eligible: b.eligible,
+      membershipId: membership.id,
+      planName: membership.planName,
+      expiresAt: membership.expiresAt,
+      deliveryFeeWaived: b.deliveryFeeWaived,
+      platformFeeWaived: b.platformFeeWaived,
+      surgeWaived: b.surgeWaived,
+      extraDiscount: b.extraDiscount,
+      totalSavings: b.total,
+    };
+  } else if (isId(userId) && !options.skipMembership) {
+    membershipUpsell = await bestPlanUpsell(benefitCtx).catch(() => null);
+  }
+
+  // GST is charged on the post-discount item value (discounts are already clamped to <= subtotal).
   const gstRate = Number(feeSettings.gstRate || 0);
   const tax =
     Number.isFinite(gstRate) && gstRate > 0
-      ? Math.round(Math.max(0, subtotal - discount) * (gstRate / 100))
+      ? Math.round(Math.max(0, subtotal - discount - membershipDiscount) * (gstRate / 100))
       : 0;
 
   const deliveryFeeGstRate = resolveDeliveryFeeGstRate(feeSettings);
@@ -560,7 +611,14 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
   const total = round2(
     Math.max(
       0,
-      subtotal + packagingFee + deliveryFee + deliveryFeeGst + platformFee + tax - discount,
+      subtotal +
+        packagingFee +
+        deliveryFee +
+        deliveryFeeGst +
+        platformFee +
+        tax -
+        discount -
+        membershipDiscount,
     ),
   );
 
@@ -572,6 +630,12 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
     deliveryFeeGst,
     platformFee,
     discount,
+    membershipDiscount,
+    membershipSavings: membershipInfo ? membershipInfo.totalSavings : 0,
+    // Only stamped when this restaurant qualifies, so cashback follows the same rule.
+    membershipId: membershipInfo?.eligible ? membershipInfo.membershipId : null,
+    membership: membershipInfo,
+    membershipUpsell,
     total,
     // The rates behind `tax` and `deliveryFeeGst`, so the apps can label the
     // bill rows ("GST (5%)") instead of showing a bare rupee figure.
@@ -591,7 +655,7 @@ export async function calculateOrderPricing(userId, dto, options = {}) {
   const pricing = applyDeliveryModePricing(
     basePricing,
     dto.deliveryMode,
-    Number(feeSettings.quickDeliveryFee) || 0,
+    surgeWaived > 0 ? 0 : quickSurcharge,
   );
 
   const priceChanges = (Array.isArray(dto.items) ? dto.items : [])

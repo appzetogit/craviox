@@ -988,6 +988,24 @@ export const adminAPI = {
       contextModule: "admin",
     }),
 
+  /** Memberships (admin) — Gold / Platinum style plans */
+  getMembershipPlans: () =>
+    apiClient.get("/food/admin/memberships/plans", { contextModule: "admin" }),
+  createMembershipPlan: (body) =>
+    apiClient.post("/food/admin/memberships/plans", body ?? {}, { contextModule: "admin" }),
+  updateMembershipPlan: (planId, body) =>
+    apiClient.patch(`/food/admin/memberships/plans/${String(planId)}`, body ?? {}, { contextModule: "admin" }),
+  deleteMembershipPlan: (planId) =>
+    apiClient.delete(`/food/admin/memberships/plans/${String(planId)}`, { contextModule: "admin" }),
+  getMembershipStats: () =>
+    apiClient.get("/food/admin/memberships/stats", { contextModule: "admin" }),
+  getMembershipMembers: (params = {}) =>
+    apiClient.get("/food/admin/memberships/members", { params, contextModule: "admin" }),
+  grantMembership: (body) =>
+    apiClient.post("/food/admin/memberships/members/grant", body ?? {}, { contextModule: "admin" }),
+  cancelMembership: (membershipId, note = "") =>
+    apiClient.patch(`/food/admin/memberships/members/${String(membershipId)}/cancel`, { note }, { contextModule: "admin" }),
+
   /** Delivery Partner Bonus (admin) */
   getDeliveryPartnerBonusTransactions: (params = {}) =>
     apiClient.get("/food/admin/delivery/bonus-transactions", {
@@ -2607,6 +2625,17 @@ export const userAPI = {
   /** GET /food/user/referrals/details (Bearer USER) */
   getReferralDetails: () =>
     apiClient.get("/food/user/referrals/details", { contextModule: "user" }),
+  /** Memberships (Bearer USER) */
+  getMembershipPlans: () =>
+    apiClient.get("/food/user/memberships/plans", { contextModule: "user" }),
+  getMyMembership: () =>
+    apiClient.get("/food/user/memberships/me", { contextModule: "user" }),
+  createMembershipOrder: (planId) =>
+    apiClient.post("/food/user/memberships/purchase/order", { planId }, { contextModule: "user" }),
+  verifyMembershipPayment: (body) =>
+    apiClient.post("/food/user/memberships/purchase/verify", body ?? {}, { contextModule: "user" }),
+  buyMembershipWithWallet: (planId, requestId) =>
+    apiClient.post("/food/user/memberships/purchase/wallet", { planId, requestId }, { contextModule: "user" }),
   /** POST /food/user/wallet/topup/order (Bearer USER). Body: { amount } */
   createWalletTopupOrder: (amount) =>
     apiClient.post(
