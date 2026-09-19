@@ -32,6 +32,20 @@ const normalizeName = (value) =>
         .replace(/-/g, ' ')
         .replace(/\s+/g, ' ');
 
+/**
+ * The apps send FSSAI expiry as a bare "YYYY-MM-DD"; the column is a DateTime,
+ * and Prisma rejects a date-only string there. Empty means no expiry on file.
+ */
+const parseFssaiExpiry = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new ValidationError('FSSAI expiry date is invalid');
+    }
+    return parsed;
+};
+
 const normalizePhone = (value) => {
     const digits = String(value || '').replace(/\D/g, '').slice(-15);
     return {
@@ -939,7 +953,7 @@ export const registerRestaurant = async (payload, files) => {
                     gstLegalName,
                     gstAddress,
                     fssaiNumber,
-                    fssaiExpiry,
+                    fssaiExpiry: parseFssaiExpiry(fssaiExpiry),
                     accountNumber,
                     ifscCode,
                     accountHolderName,
@@ -1406,16 +1420,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.fssaiNumber = String(body.fssaiNumber || '').trim();
     }
     if (body.fssaiExpiry !== undefined) {
-        const rawExpiry = String(body.fssaiExpiry || '').trim();
-        if (!rawExpiry) {
-            update.fssaiExpiry = null;
-        } else {
-            const parsedExpiry = new Date(rawExpiry);
-            if (Number.isNaN(parsedExpiry.getTime())) {
-                throw new ValidationError('FSSAI expiry date is invalid');
-            }
-            update.fssaiExpiry = parsedExpiry;
-        }
+        update.fssaiExpiry = parseFssaiExpiry(body.fssaiExpiry);
     }
     if (body.fssaiImage !== undefined) {
         update.fssaiImage = toUrl(body.fssaiImage) || '';
