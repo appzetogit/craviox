@@ -68,7 +68,10 @@ export const findConfigProblems = (cfg = config) => {
         );
     }
 
-    if (isProduction) {
+    // Same two-key pattern as the OTP bypass: ALLOW_MISSING_PRODUCTION_SECRETS
+    // lets a pre-launch server run without its payment/SMS/push credentials,
+    // and findConfigWarnings names every missing one on each boot.
+    if (isProduction && process.env.ALLOW_MISSING_PRODUCTION_SECRETS !== 'true') {
         for (const [name, read, consequence] of PRODUCTION_SECRETS) {
             if (!read(cfg)) problems.push(`${name} is not set — ${consequence}.`);
         }
@@ -97,6 +100,11 @@ export const findConfigWarnings = (cfg = config) => {
             + ' login response: anyone can sign in as any phone number, including restaurant'
             + ' owners and delivery riders. Testing only -- remove before real customers.',
         );
+    }
+    if (cfg.nodeEnv === 'production' && process.env.ALLOW_MISSING_PRODUCTION_SECRETS === 'true') {
+        for (const [name, read, consequence] of PRODUCTION_SECRETS) {
+            if (!read(cfg)) warnings.push(`${name} is not set — ${consequence}. Allowed by ALLOW_MISSING_PRODUCTION_SECRETS.`);
+        }
     }
     if (cfg.nodeEnv === 'production' && !(cfg.corsOrigins || []).length) {
         warnings.push(

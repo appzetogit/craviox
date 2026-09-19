@@ -10,9 +10,9 @@
 - Added a PM2 ecosystem file for clustered API + dedicated socket + workers.
 
 ## Recommended process layout
-- `minto-api`: PM2 cluster mode, `instances: max`, port `5000`
-- `minto-socket`: single dedicated socket server, port `5001`
-- `minto-scheduler`: single instance
+- `craviox-api`: PM2 cluster mode, `instances: max`, port `5000`
+- `craviox-socket`: single dedicated socket server, port `5001`
+- `craviox-scheduler`: single instance
 - BullMQ workers: single-purpose forked processes
 
 ## Environment variables for API cluster
