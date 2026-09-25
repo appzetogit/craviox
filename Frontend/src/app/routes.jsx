@@ -66,9 +66,9 @@ const RootEntryRoute = () => {
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
 const PublicCMSPage = lazy(() => import('./PublicCMSPage'))
 
-const publicPage = (page) => (
+const publicPage = (page, module) => (
   <Suspense fallback={<PageLoader />}>
-    <PublicCMSPage page={page} />
+    <PublicCMSPage page={page} module={module} />
   </Suspense>
 )
 
@@ -104,6 +104,13 @@ const AppRoutes = () => {
       <Route path="/support" element={publicPage('support')} />
       <Route path="/privacy" element={publicPage('privacy')} />
       <Route path="/terms" element={publicPage('terms')} />
+      {/* Exact paths outrank the /restaurant/* and /delivery/* redirects below */}
+      <Route path="/restaurant/support" element={publicPage('support', 'RESTAURANT')} />
+      <Route path="/restaurant/privacy" element={publicPage('privacy', 'RESTAURANT')} />
+      <Route path="/restaurant/terms" element={publicPage('terms', 'RESTAURANT')} />
+      <Route path="/delivery/support" element={publicPage('support', 'DELIVERY')} />
+      <Route path="/delivery/privacy" element={publicPage('privacy', 'DELIVERY')} />
+      <Route path="/delivery/terms" element={publicPage('terms', 'DELIVERY')} />
 
       {/* Auth Module */}
 
