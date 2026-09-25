@@ -7,7 +7,7 @@ import { Button } from "@food/components/ui/button"
 import api from "@food/api"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 
-export default function CMSPage({ endpoint, title: defaultTitle, module = "USER" }) {
+export default function CMSPage({ endpoint, title: defaultTitle, module = "USER", homePath = "/food/user" }) {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const [loading, setLoading] = useState(true)
@@ -66,7 +66,7 @@ export default function CMSPage({ endpoint, title: defaultTitle, module = "USER"
     if (window.history.length > 2) {
       goBack()
     } else {
-      navigate('/food/user')
+      navigate(homePath)
     }
   }
 

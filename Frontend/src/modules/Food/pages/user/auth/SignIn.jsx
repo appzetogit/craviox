@@ -215,7 +215,7 @@ export default function SignIn() {
               By joining, you agree to our policies
             </p>
             <p className="text-[10px] text-zinc-300 dark:text-zinc-700 font-bold mt-2 uppercase tracking-widest">
-              <Link to="/food/user/profile/terms" className="hover:text-[#008078]">Terms</Link> • <Link to="/food/user/profile/privacy" className="hover:text-[#008078]">Privacy</Link> • <Link to="/food/user/profile/help-content" className="hover:text-[#008078]">Support</Link>
+              <Link to="/terms" className="hover:text-[#008078]">Terms</Link> • <Link to="/privacy" className="hover:text-[#008078]">Privacy</Link> • <Link to="/support" className="hover:text-[#008078]">Support</Link>
             </p>
           </footer>
         </div>

@@ -64,6 +64,13 @@ const RootEntryRoute = () => {
 
 
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
+const PublicCMSPage = lazy(() => import('./PublicCMSPage'))
+
+const publicPage = (page) => (
+  <Suspense fallback={<PageLoader />}>
+    <PublicCMSPage page={page} />
+  </Suspense>
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -92,6 +99,11 @@ const AppRoutes = () => {
     <Routes>
       {/* Root → Master Landing Page */}
       <Route path="/" element={<RootEntryRoute />} />
+
+      {/* Public support + legal pages: no login, content managed in admin */}
+      <Route path="/support" element={publicPage('support')} />
+      <Route path="/privacy" element={publicPage('privacy')} />
+      <Route path="/terms" element={publicPage('terms')} />
 
       {/* Auth Module */}
 
