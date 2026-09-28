@@ -1865,6 +1865,9 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug) => {
                 ...toRestaurant(doc),
                 rating: normalizeRatingValue(doc.rating),
                 totalRatings: normalizeTotalRatingsValue(doc.totalRatings),
+                // Same `{ url }` shape as the list card, /current and the
+                // upload response, so clients parse one format everywhere.
+                profileImage: doc.profileImage ? { url: doc.profileImage } : null,
             }),
         ),
     ]);
