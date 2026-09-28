@@ -1431,7 +1431,9 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     // Only move profile to pending review when sensitive business/KYC fields are changed.
-    // Operational updates like location/zone/timings should stay visible to users immediately.
+    // Operational updates like location/zone/timings, and the display photos
+    // (profile, cover, menu), stay live immediately. KYC document images
+    // (PAN, GST, FSSAI, UPI QR) still go to review.
     const reviewRequiredFields = new Set([
         'restaurantName',
         'restaurantNameNormalized',
@@ -1457,10 +1459,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         'ifscCode',
         'accountType',
         'upiId',
-        'upiQrImage',
-        'profileImage',
-        'coverImages',
-        'menuImages'
+        'upiQrImage'
     ]);
 
     const requiresReview = Object.keys(update).some((field) => reviewRequiredFields.has(field));
@@ -1501,9 +1500,10 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
 };
 
 /**
- * Editing a photo puts the restaurant back in the admin review queue, and the
- * previous decision has to go with it — otherwise it sits in `pending` still
- * carrying an approvedAt, and the admin screen shows it as both.
+ * Editing KYC details puts the restaurant back in the admin review queue, and
+ * the previous decision has to go with it — otherwise it sits in `pending`
+ * still carrying an approvedAt, and the admin screen shows it as both.
+ * Display photos (profile, cover, menu) do not: they go live immediately.
  */
 const BACK_TO_REVIEW = {
     status: 'pending',
@@ -1528,20 +1528,15 @@ export const uploadRestaurantProfileImage = async (restaurantId, file) => {
 
     const current = await prisma.foodRestaurant.findUnique({
         where: { id },
-        select: { restaurantName: true, status: true },
+        select: { id: true },
     });
     if (!current) throw new ValidationError('Restaurant not found');
 
     const url = await uploadImageBuffer(file.buffer, 'food/restaurants/profile');
     await prisma.foodRestaurant.update({
         where: { id },
-        data: { profileImage: url, ...BACK_TO_REVIEW },
+        data: { profileImage: url },
     });
-
-    // Only tell the admins if this actually re-opened a settled decision.
-    if (current.status !== 'pending') {
-        void notifyAdminsAboutRestaurantProfileReview(id, current.restaurantName || '');
-    }
 
     return { profileImage: { url } };
 };
@@ -1563,7 +1558,7 @@ export const uploadRestaurantCoverImages = async (restaurantId, files = []) => {
 
     const current = await prisma.foodRestaurant.findUnique({
         where: { id },
-        select: { restaurantName: true, status: true, profileImage: true, coverImages: true },
+        select: { profileImage: true, coverImages: true },
     });
     if (!current) throw new ValidationError('Restaurant not found');
 
@@ -1573,7 +1568,6 @@ export const uploadRestaurantCoverImages = async (restaurantId, files = []) => {
 
     const data = {
         coverImages: mergeImageUrls(current.coverImages, uploadedUrls),
-        ...BACK_TO_REVIEW,
     };
     // A restaurant with no profile picture gets its first cover as one, so the
     // listing card is never blank.
@@ -1582,10 +1576,6 @@ export const uploadRestaurantCoverImages = async (restaurantId, files = []) => {
     }
 
     await prisma.foodRestaurant.update({ where: { id }, data });
-
-    if (current.status !== 'pending') {
-        void notifyAdminsAboutRestaurantProfileReview(id, current.restaurantName || '');
-    }
 
     return {
         coverImages: uploadedUrls.map((url) => ({ url, publicId: null })),
@@ -1604,7 +1594,7 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
 
     const current = await prisma.foodRestaurant.findUnique({
         where: { id },
-        select: { restaurantName: true, status: true, menuImages: true },
+        select: { menuImages: true },
     });
     if (!current) throw new ValidationError('Restaurant not found');
 
@@ -1614,12 +1604,8 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
 
     await prisma.foodRestaurant.update({
         where: { id },
-        data: { menuImages: mergeImageUrls(current.menuImages, uploadedUrls), ...BACK_TO_REVIEW },
+        data: { menuImages: mergeImageUrls(current.menuImages, uploadedUrls) },
     });
-
-    if (current.status !== 'pending') {
-        void notifyAdminsAboutRestaurantProfileReview(id, current.restaurantName || '');
-    }
 
     return { menuImages: uploadedUrls.map((url) => ({ url, publicId: null })) };
 };
