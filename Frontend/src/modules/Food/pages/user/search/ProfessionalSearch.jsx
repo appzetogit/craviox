@@ -14,7 +14,9 @@ import { adminAPI, searchAPI } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Helper to resolve media URLs consistently
-const getMediaUrl = (url) => {
+const getMediaUrl = (value) => {
+  // Images arrive as a path or as { url } (profileImage), so accept both.
+  const url = typeof value === 'string' ? value : value?.url;
   if (!url || typeof url !== 'string') return null;
   if (url.startsWith('http')) return url;
   

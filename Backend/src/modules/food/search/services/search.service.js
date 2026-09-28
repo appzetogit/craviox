@@ -188,8 +188,13 @@ export const searchUnified = async (query = {}, options = {}) => {
     const finalResult = {
         success: true,
         data: {
-            // toRestaurant rebuilds the nested `location` the cards read.
-            restaurants: results.slice(skip, skip + limitNumber).map(toRestaurant),
+            // toRestaurant rebuilds the nested `location` the cards read;
+            // profileImage uses the same `{ url }` shape as every other
+            // restaurant endpoint.
+            restaurants: results.slice(skip, skip + limitNumber).map((r) => {
+                const restaurant = toRestaurant(r);
+                return { ...restaurant, profileImage: r.profileImage ? { url: r.profileImage } : null };
+            }),
             total: results.length,
             page: pageNumber,
             limit: limitNumber,
