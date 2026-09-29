@@ -7,6 +7,7 @@ import {
   Printer,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import { getRestaurantCookingNote } from "@food/utils/orderCookingNote";
 
@@ -417,9 +418,10 @@ export default function NewOrderAcceptCard({
               type="button"
               onClick={() => onReject?.(order)}
               disabled={isAcceptingOrder}
-              className="w-full py-2.5 rounded-2xl font-bold text-[12px] text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest disabled:opacity-50"
+              className="w-full h-11 rounded-2xl border-2 border-red-500 bg-white text-red-600 hover:bg-red-50 font-black text-[13px] uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Decline Order
+              <X className="w-4 h-4 stroke-[3]" />
+              Reject Order
             </button>
           </div>
         </div>
@@ -478,9 +480,10 @@ export default function NewOrderAcceptCard({
           type="button"
           onClick={() => onReject?.(order)}
           disabled={isAcceptingOrder}
-          className="w-full py-3 rounded-2xl font-bold text-[13px] text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest disabled:opacity-50"
+          className="w-full h-12 rounded-2xl border-2 border-red-500 bg-white text-red-600 active:bg-red-50 font-black text-[14px] uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          Decline Order
+          <X className="w-5 h-5 stroke-[3]" />
+          Reject Order
         </button>
       </div>
     </motion.div>
