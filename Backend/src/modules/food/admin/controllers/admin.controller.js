@@ -1467,6 +1467,26 @@ export async function getBalanceSheetHistory(req, res, next) {
     }
 }
 
+export async function getDefaultCommission(req, res, next) {
+    try {
+        const { getDefaultCommissionPercent } = await import('../../orders/services/foodTransaction.service.js');
+        const percent = await getDefaultCommissionPercent();
+        res.status(200).json({ success: true, message: 'Default commission fetched', data: { percent } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function updateDefaultCommission(req, res, next) {
+    try {
+        const { setDefaultCommissionPercent } = await import('../../orders/services/foodTransaction.service.js');
+        const percent = await setDefaultCommissionPercent(req.body?.percent);
+        res.status(200).json({ success: true, message: 'Default commission updated', data: { percent } });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function setRestaurantBillingMode(req, res, next) {
     try {
         const data = await adminService.setRestaurantBillingMode(req.params.id, req.body?.billingMode);

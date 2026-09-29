@@ -200,6 +200,8 @@ router.get('/reports/restaurants', adminController.getRestaurantReport);
 router.get('/reports/transactions', adminController.getTransactionReport);
 router.get('/reports/tax', adminController.getTaxReport);
 router.get('/reports/tax/:id', adminController.getTaxReportDetail);
+router.get('/restaurants/billing/default-commission', adminController.getDefaultCommission);
+router.put('/restaurants/billing/default-commission', adminController.updateDefaultCommission);
 router.get('/restaurants/pending', adminController.getPendingRestaurants);
 router.get('/restaurants/unregistered', adminController.getUnregisteredRestaurants);
 router.delete('/restaurants/unregistered/:id', adminController.deleteUnregisteredRestaurant);

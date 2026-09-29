@@ -1,4 +1,5 @@
 import { prisma } from '../../../../config/prisma.js';
+import { ValidationError } from '../../../../core/auth/errors.js';
 import { toFoodTransaction } from '../order.mapper.js';
 import { resolveDiscountSplitByCoupon } from '../../shared/discountSplit.util.js';
 
@@ -29,6 +30,50 @@ async function getActiveRestaurantCommissionRules() {
  * commission rule cache already makes.
  */
 const billingModeCache = new Map(); // restaurantId -> { mode, at }
+
+let defaultCommissionCache = null;
+let defaultCommissionLoadedAt = 0;
+
+/**
+ * The platform-wide rate for restaurants with no commission row of their own,
+ * as a rule computeRestaurantCommissionAmount understands. Without it an
+ * "Overall commission" restaurant nobody had configured paid nothing.
+ */
+async function getDefaultCommissionRule() {
+  const now = Date.now();
+  if (defaultCommissionCache && now - defaultCommissionLoadedAt < RESTAURANT_COMMISSION_CACHE_MS) {
+    return defaultCommissionCache;
+  }
+  const settings = await prisma.foodBusinessSettings.findFirst({
+    select: { defaultCommissionPercent: true },
+  });
+  const percent = Math.max(0, Number(settings?.defaultCommissionPercent ?? 0) || 0);
+  defaultCommissionCache = { commissionType: 'percentage', commissionValue: percent };
+  defaultCommissionLoadedAt = now;
+  return defaultCommissionCache;
+}
+
+export async function getDefaultCommissionPercent() {
+  return (await getDefaultCommissionRule()).commissionValue;
+}
+
+export async function setDefaultCommissionPercent(value) {
+  const percent = Number(value);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    throw new ValidationError('Default commission must be between 0 and 100 percent');
+  }
+  const existing = await prisma.foodBusinessSettings.findFirst({ select: { id: true } });
+  if (existing) {
+    await prisma.foodBusinessSettings.update({
+      where: { id: existing.id },
+      data: { defaultCommissionPercent: percent },
+    });
+  } else {
+    await prisma.foodBusinessSettings.create({ data: { defaultCommissionPercent: percent } });
+  }
+  defaultCommissionCache = null;
+  return percent;
+}
 
 async function getRestaurantBillingMode(restaurantId) {
   const hit = billingModeCache.get(restaurantId);
@@ -176,7 +221,9 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
   }
 
   const rules = await getActiveRestaurantCommissionRules();
-  const rule = rules.find((r) => String(r.restaurantId) === restaurantId) || null;
+  // The restaurant's own rate, else the platform default.
+  const rule =
+    rules.find((r) => String(r.restaurantId) === restaurantId) || (await getDefaultCommissionRule());
 
   if (billingMode === 'commission_dish') {
     const lines = orderLines(orderDoc);

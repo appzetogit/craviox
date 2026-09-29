@@ -2173,6 +2173,10 @@ model FoodBusinessSettings {
 
   orderAcceptanceTimeMinutes Int @default(4)
 
+  /// Commission (% of food subtotal) for restaurants on "Overall commission"
+  /// that have no rate of their own on the Restaurant Commission screen.
+  defaultCommissionPercent Decimal @default(15) @db.Decimal(5, 2)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

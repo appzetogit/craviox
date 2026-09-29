@@ -1160,6 +1160,15 @@ export const adminAPI = {
       body ?? {},
       { contextModule: "admin" },
     ),
+  /** Commission % for "Overall commission" restaurants with no rate of their own. */
+  getDefaultCommission: () =>
+    apiClient.get("/food/admin/restaurants/billing/default-commission", { contextModule: "admin" }),
+  updateDefaultCommission: (percent) =>
+    apiClient.put(
+      "/food/admin/restaurants/billing/default-commission",
+      { percent },
+      { contextModule: "admin" },
+    ),
   setRestaurantBillingMode: (id, billingMode) =>
     apiClient.patch(
       `/food/admin/restaurants/${String(id)}/billing-mode`,

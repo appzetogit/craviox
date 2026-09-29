@@ -51,6 +51,42 @@ export default function RestaurantBilling() {
     const [dishItems, setDishItems] = useState([])
     const [dishLoading, setDishLoading] = useState(false)
     const [dishSavingId, setDishSavingId] = useState(null)
+    const [defaultCommission, setDefaultCommission] = useState("")
+    const [savedDefaultCommission, setSavedDefaultCommission] = useState(null)
+    const [savingDefault, setSavingDefault] = useState(false)
+
+    useEffect(() => {
+        adminAPI
+            .getDefaultCommission()
+            .then((res) => {
+                const percent = res?.data?.data?.percent
+                if (percent !== undefined && percent !== null) {
+                    setDefaultCommission(String(percent))
+                    setSavedDefaultCommission(Number(percent))
+                }
+            })
+            .catch(() => {})
+    }, [])
+
+    const saveDefaultCommission = async () => {
+        const percent = Number(defaultCommission)
+        if (defaultCommission === "" || !Number.isFinite(percent) || percent < 0 || percent > 100) {
+            toast.error("Enter a commission between 0 and 100")
+            return
+        }
+        try {
+            setSavingDefault(true)
+            const res = await adminAPI.updateDefaultCommission(percent)
+            const saved = Number(res?.data?.data?.percent ?? percent)
+            setSavedDefaultCommission(saved)
+            setDefaultCommission(String(saved))
+            toast.success(`Default commission set to ${saved}%`)
+        } catch (error) {
+            // The interceptor already toasts.
+        } finally {
+            setSavingDefault(false)
+        }
+    }
 
     const fetchRestaurants = useCallback(async () => {
         try {
@@ -166,6 +202,40 @@ export default function RestaurantBilling() {
                             <strong>Subscription</strong> stops per-order commission entirely, so the
                             restaurant is not charged twice for the same order.
                         </p>
+                    </div>
+
+                    <div className="mb-4 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 sm:flex-row sm:items-end">
+                        <div className="flex-1">
+                            <label className="block text-sm font-semibold text-emerald-900">
+                                Default overall commission (%)
+                            </label>
+                            <p className="mt-0.5 text-xs text-emerald-800">
+                                Charged on the food subtotal for every <strong>Overall commission</strong> restaurant
+                                without its own rate (set one on Restaurant Commission to override).
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value={defaultCommission}
+                                    onChange={(e) => setDefaultCommission(e.target.value)}
+                                    className="w-28 rounded-lg border border-emerald-300 bg-white py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                />
+                                <Percent className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={saveDefaultCommission}
+                                disabled={savingDefault || Number(defaultCommission) === savedDefaultCommission}
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                                {savingDefault ? "Saving..." : "Save"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="mb-4 relative max-w-sm">
