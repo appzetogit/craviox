@@ -46,7 +46,8 @@ const rangeSchema = z.object({
 
 const feeSettingsUpsertSchema = z.object({
     deliveryFee: bounded('Delivery fee', MAX_AMOUNT).nullable().optional(),
-    deliveryFeeRanges: z.array(rangeSchema).optional(),
+    // One range covers the whole delivery area; more than one is refused.
+    deliveryFeeRanges: z.array(rangeSchema).max(1, 'Only one delivery range is allowed').optional(),
     platformFee: bounded('Platform fee', MAX_AMOUNT).nullable().optional(),
     quickDeliveryFee: bounded('Quick delivery extra', MAX_AMOUNT).nullable().optional(),
     gstRate: percentage('GST rate').nullable().optional(),

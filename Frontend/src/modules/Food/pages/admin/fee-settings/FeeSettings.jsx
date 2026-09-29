@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Save, Loader2, DollarSign, Plus, Trash2, Edit, Check, X } from "lucide-react"
+import { Save, Loader2, DollarSign, Plus, Edit, Check, X } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
@@ -127,7 +127,8 @@ export default function FeeSettings() {
           deliveryBoyBasePay: r.deliveryBoyBasePay === "" ? 0 : Number(r.deliveryBoyBasePay),
         })),
         platformFee: settingsToSave.platformFee === "" ? undefined : Number(settingsToSave.platformFee),
-        quickDeliveryFee: settingsToSave.quickDeliveryFee === "" ? undefined : Number(settingsToSave.quickDeliveryFee),
+        // Quick delivery extra is not offered; saving clears any old value.
+        quickDeliveryFee: null,
         gstRate: settingsToSave.gstRate === "" ? undefined : Number(settingsToSave.gstRate),
         deliveryFeeGstRate: settingsToSave.deliveryFeeGstRate === "" ? undefined : Number(settingsToSave.deliveryFeeGstRate),
         isActive: true,
@@ -272,16 +273,6 @@ export default function FeeSettings() {
   }
 
   // Delete delivery fee range
-  const handleDeleteRange = async (index) => {
-    const newRanges = feeSettings.deliveryFeeRanges.filter((_, i) => i !== index)
-    const updatedSettings = {
-      ...feeSettings,
-      deliveryFeeRanges: newRanges
-    }
-    setFeeSettings(updatedSettings)
-    await saveSettings(updatedSettings)
-  }
-
   // Edit delivery fee range
   const handleEditRange = (index) => {
     const range = feeSettings.deliveryFeeRanges[index]
@@ -453,9 +444,9 @@ export default function FeeSettings() {
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Delivery Fee by Distance Range</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Delivery Fee &amp; Rider Pay</h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      Set different delivery fees based on distance ranges (in km)
+                      One range covers the whole delivery area. Orders beyond its max distance are not accepted.
                     </p>
                   </div>
                 </div>
@@ -603,13 +594,6 @@ export default function FeeSettings() {
                                         >
                                           <Edit className="w-4 h-4" />
                                         </button>
-                                        <button
-                                          onClick={() => handleDeleteRange(originalIndex)}
-                                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
                                       </>
                                     )}
                                   </div>
@@ -622,7 +606,8 @@ export default function FeeSettings() {
                   </div>
                 )}
 
-                {/* Add/Edit Range Form */}
+                {/* Add/Edit Range Form: only while editing, or to create the first (and only) range */}
+                {(editingRangeIndex !== null || feeSettings.deliveryFeeRanges.length === 0) && (
                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-2 mb-3">
                       {editingRangeIndex !== null ? (
@@ -731,6 +716,7 @@ export default function FeeSettings() {
                     Rider gets DB Base Pay + DB Per KM × distance (₹15 + ₹3/km → ₹21 for 2 km). Any part can be 0.
                   </p>
                 </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-200 pt-6 mt-6">
@@ -755,29 +741,6 @@ export default function FeeSettings() {
                   </p>
                   {feeErrors.platformFee ? (
                     <p className="text-xs font-medium text-red-600">{feeErrors.platformFee}</p>
-                  ) : null}
-                </div>
-
-                {/* Quick Delivery Fee */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">
-                    Quick Delivery Extra (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={feeSettings.quickDeliveryFee}
-                    onChange={(e) => setFee("quickDeliveryFee", e.target.value)}
-                    onKeyDown={blockExponent}
-                    min="0"
-                    step="1"
-                    className={feeInputClass("quickDeliveryFee")}
-                    placeholder="15"
-                  />
-                  <p className="text-xs text-slate-500">
-                    Extra amount added on top of delivery fee when user selects Quick Mode
-                  </p>
-                  {feeErrors.quickDeliveryFee ? (
-                    <p className="text-xs font-medium text-red-600">{feeErrors.quickDeliveryFee}</p>
                   ) : null}
                 </div>
 
