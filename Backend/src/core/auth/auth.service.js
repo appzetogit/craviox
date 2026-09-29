@@ -31,9 +31,11 @@ const ROLES = {
  * excluded there because the panel is used across several tabs and machines, and
  * evicting those would be a regression rather than a safeguard.
  */
+// Restaurants are deliberately absent: an outlet runs the partner app on
+// several devices at once (counter tablet, owner's phone, kitchen screen), and
+// every one of them must stay signed in and receive new-order pushes.
 const SINGLE_DEVICE_ROLES = new Set([
   ROLES.USER,
-  ROLES.RESTAURANT,
   ROLES.DELIVERY_PARTNER,
 ]);
 
@@ -410,10 +412,13 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
   // Postpaid subscription model: no onboarding payment or subscription purchase
   // is required to use the platform — dues are billed at each month end.
 
+  // Multi-device: sign in at the CURRENT version instead of bumping it, so a new
+  // login leaves the restaurant's other devices signed in. Admin block or
+  // deactivation still bumps the version and signs every device out.
   const payload = {
     userId: restaurant.id,
     role: ROLES.RESTAURANT,
-    tokenVersion: await bumpTokenVersion(prisma.foodRestaurant, restaurant.id),
+    tokenVersion: Number(restaurant.tokenVersion) || 0,
   };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
