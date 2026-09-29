@@ -45,6 +45,15 @@ export async function rejectRestaurantAddon(req, res, next) {
     }
 }
 
+export async function createRestaurantAddon(req, res, next) {
+    try {
+        const addon = await adminService.createRestaurantAddonAdmin(req.body || {});
+        res.status(201).json({ success: true, message: 'Add-on created', data: { addon } });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function updateRestaurantAddon(req, res, next) {
     try {
         const { id } = req.params;

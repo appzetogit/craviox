@@ -2,6 +2,7 @@ import { prisma } from '../../../../config/prisma.js';
 import { isId } from '../../../../utils/helpers.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { logger } from '../../../../utils/logger.js';
+import { createRestaurantAddon, sanitizeFoodIds } from '../../restaurant/services/restaurantAddon.service.js';
 
 /**
  * Add-on approval, extracted from admin.service.js.
@@ -142,9 +143,20 @@ export async function updateRestaurantAddonAdmin(addonId, body = {}) {
 
     if (body.isAvailable !== undefined) data.isAvailable = body.isAvailable === true;
 
+    // Which dishes it applies to; [] means the whole menu.
+    if (Array.isArray(body.foodIds)) {
+        data.foodIds = await sanitizeFoodIds(addon.restaurantId, body.foodIds);
+    }
+
     const updated = await prisma.foodAddon.update({ where: { id: addon.id }, data });
     await dropPublicAddonCache();
     return serializeAddon(updated);
+}
+
+/** Admin creates an add-on for a restaurant; it is live immediately. */
+export async function createRestaurantAddonAdmin(body = {}) {
+    if (!isId(body.restaurantId)) throw new ValidationError('Choose a restaurant');
+    return createRestaurantAddon(String(body.restaurantId), body, { byAdmin: true });
 }
 
 export async function approveRestaurantAddon(addonId) {

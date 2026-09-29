@@ -49,7 +49,7 @@ const assertRestaurantId = (restaurantId) => {
  * menu items, and those add-ons would then surface on that restaurant's item sheet
  * at a price its owner never set.
  */
-async function sanitizeFoodIds(restaurantId, foodIds) {
+export async function sanitizeFoodIds(restaurantId, foodIds) {
     const ids = [...new Set(
         (Array.isArray(foodIds) ? foodIds : []).map((v) => String(v || '').trim())
     )].filter(isId);
@@ -169,7 +169,12 @@ export async function listRestaurantAddons(restaurantId, query = {}) {
     return { addons: list.map(serializeAddon), total, page, limit };
 }
 
-export async function createRestaurantAddon(restaurantId, body = {}) {
+/**
+ * `byAdmin`: the admin panel creating an add-on for a restaurant. It needs no
+ * approval — it goes live at once (published = draft) and skips the
+ * "please approve" notification the admins would otherwise send themselves.
+ */
+export async function createRestaurantAddon(restaurantId, body = {}, { byAdmin = false } = {}) {
     const rid = assertRestaurantId(restaurantId);
 
     const name = String(body?.name || '').trim();
@@ -178,27 +183,38 @@ export async function createRestaurantAddon(restaurantId, body = {}) {
 
     const foodIds = await sanitizeFoodIds(rid, body?.foodIds);
 
+    const price = Number(body.price);
+    if (!Number.isFinite(price) || price < 0) throw new ValidationError('Price must be a valid positive number');
+
+    const draft = {
+        name,
+        description: String(body.description || '').trim(),
+        foodType: normalizeAddonFoodType(body?.foodType),
+        price,
+        image: String(body.image || '').trim(),
+        images: cleanImages(body.images),
+    };
+
     const addon = await prisma.foodAddon.create({
         data: {
             restaurantId: rid,
-            draft: {
-                name,
-                description: String(body.description || '').trim(),
-                foodType: normalizeAddonFoodType(body?.foodType),
-                price: Number(body.price) || 0,
-                image: String(body.image || '').trim(),
-                images: cleanImages(body.images),
-            },
-            published: undefined,
+            draft,
+            published: byAdmin ? draft : undefined,
             foodIds,
             groupName: String(body?.group?.name || '').trim(),
             groupMinSelect: Number(body?.group?.minSelect) || 0,
             groupMaxSelect: Number(body?.group?.maxSelect) || 1,
             groupSortOrder: Number(body?.group?.sortOrder) || 0,
-            approvalStatus: 'pending',
+            approvalStatus: byAdmin ? 'approved' : 'pending',
             requestedAt: new Date(),
+            ...(byAdmin ? { approvedAt: new Date() } : {}),
         },
     });
+
+    if (byAdmin) {
+        await invalidatePublicAddonCache();
+        return serializeAddon(addon);
+    }
 
     void notifyAdminsSafely({
         title: 'New Addon Approval Request 🍟',

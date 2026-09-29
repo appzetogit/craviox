@@ -1314,6 +1314,9 @@ export const adminAPI = {
       params: params ?? {},
       contextModule: "admin",
     }),
+  /** Admin creates an add-on for a restaurant (live at once; foodIds [] = all dishes). */
+  createRestaurantAddon: (body) =>
+    apiClient.post("/food/admin/addons", body ?? {}, { contextModule: "admin" }),
   updateRestaurantAddon: (id, body) =>
     apiClient.patch(
       `/food/admin/addons/${String(id)}`,

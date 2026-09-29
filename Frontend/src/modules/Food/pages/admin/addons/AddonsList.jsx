@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
-import { Eye, Loader2, Search, Trash2, Pencil } from "lucide-react"
+import { Eye, Loader2, Search, Trash2, Pencil, Plus } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
 import { adminAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
+import AddonCreateDialog from "@food/components/admin/addons/AddonCreateDialog"
+import AddonDishPicker from "@food/components/admin/addons/AddonDishPicker"
 
 const debugError = (...args) => {}
 
@@ -41,7 +43,9 @@ export default function AddonsList() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [editingAddon, setEditingAddon] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [editForm, setEditForm] = useState({ name: "", price: "", description: "", isAvailable: true })
+  const [editForm, setEditForm] = useState({ name: "", price: "", description: "", isAvailable: true, foodIds: [] })
+  const [showCreate, setShowCreate] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [editImagePreview, setEditImagePreview] = useState("")
   const [editImageFile, setEditImageFile] = useState(null)
 
@@ -72,7 +76,7 @@ export default function AddonsList() {
 
     const t = setTimeout(fetchAddons, 250)
     return () => clearTimeout(t)
-  }, [searchQuery])
+  }, [searchQuery, reloadKey])
 
   const filteredAddons = useMemo(() => {
     const result = Array.isArray(addons) ? [...addons] : []
@@ -94,6 +98,7 @@ export default function AddonsList() {
       price: addon?.draft?.price ?? addon?.price ?? "",
       description: addon?.draft?.description || addon?.description || "",
       isAvailable: addon?.isAvailable !== false,
+      foodIds: Array.isArray(addon?.foodIds) ? addon.foodIds.map(String) : [],
     })
     const img =
       addon?.draft?.image ||
@@ -132,6 +137,7 @@ export default function AddonsList() {
         price: priceNum,
         description: editForm.description.trim(),
         isAvailable: editForm.isAvailable,
+        foodIds: editForm.foodIds,
         image: imageUrl,
         images: imageUrl ? [imageUrl] : [],
       })
@@ -191,10 +197,21 @@ export default function AddonsList() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Restaurant add-ons</h1>
-            <div className="text-sm text-slate-500 mt-1">Manage add-ons submitted by restaurants.</div>
+            <div className="text-sm text-slate-500 mt-1">
+              Add-ons for each restaurant, for all its dishes or only the ones you pick.
+            </div>
           </div>
 
-          <div className="flex items-center gap-2" />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add add-on
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -328,6 +345,12 @@ export default function AddonsList() {
         </div>
       </div>
 
+      <AddonCreateDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onCreated={() => setReloadKey((k) => k + 1)}
+      />
+
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
         <DialogContent className="max-w-xl p-0 overflow-hidden">
           <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50">
@@ -448,6 +471,14 @@ export default function AddonsList() {
                 onCheckedChange={(checked) => setEditForm((prev) => ({ ...prev, isAvailable: checked }))}
               />
               <span className="text-sm text-slate-700">Available</span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Dishes it applies to</label>
+              <AddonDishPicker
+                restaurantId={editingAddon?.restaurantId ? String(editingAddon.restaurantId) : ""}
+                value={editForm.foodIds}
+                onChange={(foodIds) => setEditForm((prev) => ({ ...prev, foodIds }))}
+              />
             </div>
           </div>
           <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
