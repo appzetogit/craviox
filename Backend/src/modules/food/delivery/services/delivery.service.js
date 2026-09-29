@@ -967,10 +967,12 @@ export const getActiveEarningAddonsForPartner = async (deliveryPartnerId) => {
  * withdrawals and cash deposits pointing at a partner that no longer existed,
  * which quietly skewed finance reports.
  *
- * The wallet LEDGER is deliberately not touched: `transactions.entityId` is a
- * plain column with no foreign key, so those rows survive. They are the record
- * of money that actually moved, and reconciliation still needs them after the
- * account is gone. Orders and the per-order split keep their history too — those
+ * The wallet and its LEDGER are deliberately not touched. `transactions` has a
+ * RESTRICT foreign key to `wallets` (entityType, entityId), so deleting a wallet
+ * that ever moved money fails outright — and those rows are the record of money
+ * that actually moved, which reconciliation still needs after the account is
+ * gone. The wallet has no FK to the partner, so it survives the delete as a
+ * closed ledger. Orders and the per-order split keep their history too — those
  * FKs are ON DELETE SET NULL, so a delivered order stays delivered.
  */
 export const deleteDeliveryPartnerAccount = async (partnerId) => {
@@ -1017,7 +1019,6 @@ export const deleteDeliveryPartnerAccount = async (partnerId) => {
         prisma.deliveryOrderEmergencyRequest.deleteMany(byPartner),
         prisma.deliverySupportTicket.deleteMany(byPartner),
         prisma.orderDispatchOffer.deleteMany({ where: { partnerId: id } }),
-        prisma.wallet.deleteMany({ where: { entityType: 'deliveryBoy', entityId: id } }),
         prisma.foodDeliveryPartner.delete({ where: { id } }),
     ]);
 
