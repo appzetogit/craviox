@@ -6,6 +6,7 @@ import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service
 import { upsertFirebaseDeviceToken } from '../../../../core/notifications/firebase.service.js';
 import { logger } from '../../../../utils/logger.js';
 import { collectDynamicRegistration } from './driverRegistrationField.service.js';
+import { getDeliveryPartnerWalletEnhanced } from './deliveryFinance.service.js';
 
 const num = (v) => Number(v) || 0;
 
@@ -976,6 +977,35 @@ export const deleteDeliveryPartnerAccount = async (partnerId) => {
     const id = String(partnerId);
     const partner = await prisma.foodDeliveryPartner.findUnique({ where: { id } });
     if (!partner) throw new ValidationError('Delivery partner not found');
+
+    // Refuse while the account still has obligations the delete would erase:
+    // an order mid-delivery would lose its rider, and the cash-deposit and
+    // withdrawal rows removed below are the only record of money owed either way.
+    const activeTrip = await prisma.foodOrder.findFirst({
+        where: {
+            dispatchDeliveryPartnerId: id,
+            dispatchStatus: 'accepted',
+            orderStatus: { in: ['confirmed', 'preparing', 'ready_for_pickup', 'picked_up'] },
+        },
+        select: { orderId: true },
+    });
+    if (activeTrip) {
+        throw new ValidationError(
+            `Finish your current delivery (order ${activeTrip.orderId}) before deleting your account.`,
+        );
+    }
+
+    const wallet = await getDeliveryPartnerWalletEnhanced(id);
+    if (Number(wallet.cashInHand) > 0) {
+        throw new ValidationError(
+            `Deposit the ₹${Number(wallet.cashInHand).toFixed(2)} cash you are holding before deleting your account.`,
+        );
+    }
+    if (Number(wallet.pendingWithdrawals) > 0) {
+        throw new ValidationError(
+            'You have a withdrawal being processed. Wait for it to complete before deleting your account.',
+        );
+    }
 
     const byPartner = { where: { deliveryPartnerId: id } };
 
