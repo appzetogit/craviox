@@ -61,12 +61,21 @@ export const authMiddleware = (req, res, next) => {
     delegate()
         .findUnique({
             where: { id: decoded.userId },
-            select: { tokenVersion: true, ...(decoded.role === 'USER' ? { isActive: true } : {}) },
+            select: {
+                tokenVersion: true,
+                ...(decoded.role === 'USER' ? { isActive: true } : {}),
+                ...(decoded.role === 'DELIVERY_PARTNER' ? { deletedAt: true } : {}),
+            },
         })
         .then((doc) => {
             if (!doc) return sendError(res, 401, 'Account not found');
             if (decoded.role === 'USER' && doc.isActive === false) {
                 return sendError(res, 401, 'User account is deactivated');
+            }
+            // A soft-deleted rider's row still exists; say what happened rather
+            // than blaming another device.
+            if (doc.deletedAt) {
+                return sendError(res, 401, 'This account has been deleted');
             }
 
             // A token minted before the latest login belongs to a device that has
@@ -79,10 +88,14 @@ export const authMiddleware = (req, res, next) => {
             const stored = Number(doc.tokenVersion) || 0;
             const presented = decoded.tokenVersion;
             if (presented !== undefined && Number(presented) !== stored) {
+                // Restaurants are multi-device, so for them a version change only
+                // ever comes from an admin action, not another login.
                 return sendError(
                     res,
                     401,
-                    'You have been signed out because this account was used on another device'
+                    decoded.role === 'RESTAURANT'
+                        ? 'You have been signed out. Please log in again.'
+                        : 'You have been signed out because this account was used on another device'
                 );
             }
 
