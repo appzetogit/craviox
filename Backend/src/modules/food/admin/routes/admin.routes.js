@@ -265,6 +265,7 @@ router.get('/withdrawals/balance-sheet/history', adminController.getBalanceSheet
 router.post('/withdrawals/balance-sheet/payout/:entityType/:entityId', adminController.payoutBalance);
 
 router.patch('/restaurants/:id/billing-mode', adminController.setRestaurantBillingMode);
+router.put('/restaurants/:id/commission', adminController.setRestaurantOverallCommission);
 router.get('/restaurants/:id/item-commissions', adminController.getItemCommissions);
 router.patch('/restaurants/:id/item-commissions/:itemId', adminController.upsertItemCommission);
 

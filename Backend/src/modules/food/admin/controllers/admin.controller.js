@@ -1487,6 +1487,15 @@ export async function updateDefaultCommission(req, res, next) {
     }
 }
 
+export async function setRestaurantOverallCommission(req, res, next) {
+    try {
+        const data = await adminService.setRestaurantOverallCommission(req.params.id, req.body?.percent);
+        res.status(200).json({ success: true, message: 'Restaurant commission updated', data });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function setRestaurantBillingMode(req, res, next) {
     try {
         const data = await adminService.setRestaurantBillingMode(req.params.id, req.body?.billingMode);

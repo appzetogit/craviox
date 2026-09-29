@@ -407,3 +407,36 @@ export async function toggleDeliveryCommissionRuleStatus(id, status) {
     const updated = await prisma.foodDeliveryCommissionRule.findUnique({ where: { id: String(id) } });
     return serializeRule(updated);
 }
+
+/**
+ * Set one restaurant's own overall commission (% of food subtotal) from the
+ * Billing page, or pass null to drop it so the platform default applies.
+ * Keyed by restaurant (restaurantId is unique on the table), so the page never
+ * needs the commission row's id.
+ */
+export async function setRestaurantOverallCommission(restaurantId, percent) {
+    if (!isId(restaurantId)) throw new ValidationError('Restaurant not found');
+    const id = String(restaurantId);
+    const { invalidateRestaurantCommissionCache } = await import('../../orders/services/foodTransaction.service.js');
+
+    if (percent === null || percent === undefined || percent === '') {
+        await prisma.foodRestaurantCommission.deleteMany({ where: { restaurantId: id } });
+        invalidateRestaurantCommissionCache();
+        return { restaurantId: id, percent: null };
+    }
+
+    const value = Number(percent);
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+        throw new ValidationError('Commission must be between 0 and 100 percent');
+    }
+    const exists = await prisma.foodRestaurant.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new ValidationError('Restaurant not found');
+
+    await prisma.foodRestaurantCommission.upsert({
+        where: { restaurantId: id },
+        create: { restaurantId: id, commissionType: 'percentage', commissionValue: value, status: true },
+        update: { commissionType: 'percentage', commissionValue: value, status: true },
+    });
+    invalidateRestaurantCommissionCache();
+    return { restaurantId: id, percent: value };
+}

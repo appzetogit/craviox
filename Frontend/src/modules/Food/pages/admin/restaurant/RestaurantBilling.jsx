@@ -30,6 +30,62 @@ const MODES = [
     },
 ]
 
+/** One restaurant's overall commission: its own rate, or the platform default. */
+function CommissionCell({ restaurantId, mode, own, draft, defaultPercent, saving, onDraft, onSave }) {
+    if (mode === "subscription") {
+        return <span className="text-sm text-slate-400">— (subscription)</span>
+    }
+    const ownText = own && own.type === "percentage" ? String(own.value) : ""
+    const shown = draft ?? ownText
+    const dirty = draft !== undefined && draft !== ownText
+    const defaultText = defaultPercent !== null && defaultPercent !== undefined ? `${defaultPercent}%` : ""
+
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+                <div className="relative">
+                    <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={shown}
+                        placeholder={defaultPercent !== null && defaultPercent !== undefined ? String(defaultPercent) : ""}
+                        onChange={(e) => onDraft(e.target.value)}
+                        className="w-24 rounded-lg border border-slate-300 py-1.5 pl-2.5 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    />
+                    <Percent className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                </div>
+                {dirty && (
+                    <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => onSave(restaurantId, draft)}
+                        className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                    >
+                        {saving ? "Saving..." : "Save"}
+                    </button>
+                )}
+            </div>
+            {own ? (
+                <span className="text-xs text-slate-500">
+                    {own.type === "amount" ? `Own rate: ₹${own.value} flat · ` : "Own rate · "}
+                    <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => onSave(restaurantId, null)}
+                        className="font-medium text-emerald-700 hover:underline disabled:opacity-50"
+                    >
+                        use default{defaultText ? ` (${defaultText})` : ""}
+                    </button>
+                </span>
+            ) : (
+                <span className="text-xs text-slate-400">Using default {defaultText}</span>
+            )}
+        </div>
+    )
+}
+
 const modeLabel = (value) => MODES.find((m) => m.value === value)?.label || "Overall commission"
 
 const badgeClass = (mode) =>
@@ -54,6 +110,58 @@ export default function RestaurantBilling() {
     const [defaultCommission, setDefaultCommission] = useState("")
     const [savedDefaultCommission, setSavedDefaultCommission] = useState(null)
     const [savingDefault, setSavingDefault] = useState(false)
+    // restaurantId -> { type, value } for restaurants with their own rate
+    const [ownRates, setOwnRates] = useState({})
+    const [rateDrafts, setRateDrafts] = useState({})
+    const [rateSavingId, setRateSavingId] = useState(null)
+
+    const fetchOwnRates = useCallback(async () => {
+        try {
+            const res = await adminAPI.getRestaurantCommissions()
+            const list = res?.data?.data?.commissions || res?.data?.commissions || []
+            const map = {}
+            for (const row of list) {
+                if (row?.status === false) continue
+                map[String(row.restaurantId)] = row.defaultCommission || { type: "percentage", value: 0 }
+            }
+            setOwnRates(map)
+        } catch (error) {
+            setOwnRates({})
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchOwnRates()
+    }, [fetchOwnRates])
+
+    const saveOwnRate = async (restaurantId, value) => {
+        const clearing = value === null
+        const percent = clearing ? null : Number(value)
+        if (!clearing && (value === "" || !Number.isFinite(percent) || percent < 0 || percent > 100)) {
+            toast.error("Enter a commission between 0 and 100")
+            return
+        }
+        try {
+            setRateSavingId(restaurantId)
+            await adminAPI.setRestaurantCommission(restaurantId, percent)
+            setOwnRates((prev) => {
+                const next = { ...prev }
+                if (clearing) delete next[restaurantId]
+                else next[restaurantId] = { type: "percentage", value: percent }
+                return next
+            })
+            setRateDrafts((prev) => {
+                const next = { ...prev }
+                delete next[restaurantId]
+                return next
+            })
+            toast.success(clearing ? "Now using the default commission" : `Commission set to ${percent}%`)
+        } catch (error) {
+            // The interceptor already toasts.
+        } finally {
+            setRateSavingId(null)
+        }
+    }
 
     useEffect(() => {
         adminAPI
@@ -269,6 +377,9 @@ export default function RestaurantBilling() {
                                         <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                                             Billing Mode
                                         </th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Overall Commission
+                                        </th>
                                         <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                                             Dish Rates
                                         </th>
@@ -311,6 +422,18 @@ export default function RestaurantBilling() {
                                                             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
                                                         )}
                                                     </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <CommissionCell
+                                                        restaurantId={String(id)}
+                                                        mode={mode}
+                                                        own={ownRates[String(id)]}
+                                                        draft={rateDrafts[String(id)]}
+                                                        defaultPercent={savedDefaultCommission}
+                                                        saving={rateSavingId === String(id)}
+                                                        onDraft={(value) => setRateDrafts((prev) => ({ ...prev, [String(id)]: value }))}
+                                                        onSave={saveOwnRate}
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <button

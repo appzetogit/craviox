@@ -31,6 +31,12 @@ async function getActiveRestaurantCommissionRules() {
  */
 const billingModeCache = new Map(); // restaurantId -> { mode, at }
 
+/** Drop cached per-restaurant rates so an admin edit applies to the next order. */
+export function invalidateRestaurantCommissionCache() {
+  restaurantCommissionRulesCache = null;
+  restaurantCommissionRulesLoadedAt = 0;
+}
+
 let defaultCommissionCache = null;
 let defaultCommissionLoadedAt = 0;
 
