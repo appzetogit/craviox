@@ -76,12 +76,9 @@ ALTER TABLE "delivery_fee_bands" DROP CONSTRAINT IF EXISTS "delivery_fee_band_am
 ALTER TABLE "delivery_fee_bands" ADD CONSTRAINT "delivery_fee_band_amounts_non_negative"
   CHECK ("fee" >= 0 AND "deliveryBoyBasePay" >= 0 AND "deliveryBoyPerKm" >= 0);
 
--- basePay and perKm are alternatives, never both. calculateRiderEarning already
--- treats a non-zero basePay as the winner, so a row with both set has one value
--- that silently does nothing — and whoever configured it has no way to tell.
+-- Rider pay is base + per-km × distance, so a band may set both. The old
+-- either/or CHECK is dropped (it stays dropped on every re-apply).
 ALTER TABLE "delivery_fee_bands" DROP CONSTRAINT IF EXISTS "delivery_fee_band_pay_exclusive";
-ALTER TABLE "delivery_fee_bands" ADD CONSTRAINT "delivery_fee_band_pay_exclusive"
-  CHECK ("deliveryBoyBasePay" = 0 OR "deliveryBoyPerKm" = 0);
 
 -- The point of the whole table. Two bands on the same settings row may not cover
 -- the same distance: [0,5) and [3,8) both match a 4 km trip, and which one priced

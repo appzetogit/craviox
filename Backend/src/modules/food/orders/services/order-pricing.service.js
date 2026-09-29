@@ -345,15 +345,13 @@ export function calculateRiderEarning(feeSettings = {}, distanceKm) {
     : [];
   if (ranges.length === 0) return 0;
 
-  // basePay and perKm are mutually exclusive (the admin UI enforces this too):
-  // a flat basePay wins, otherwise pay per km of the actual trip.
+  // Pay = the band's base pay + its per-km rate × the trip distance. Either
+  // part may be 0: base only is a flat fee, per-km only scales with distance,
+  // and together a short trip still earns the base.
   const payFor = (range) => {
     const basePay = Number(range?.deliveryBoyBasePay || 0);
     const perKm = Number(range?.deliveryBoyPerKm || 0);
-
-    if (basePay > 0) return basePay;
-    if (perKm > 0) return distance * perKm;
-    return 0;
+    return basePay + distance * perKm;
   };
 
   const matched = matchFeeRange(ranges, distance, payFor);

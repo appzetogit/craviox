@@ -68,6 +68,13 @@ test('rider pay: per-km bands multiply by the real distance', () => {
     assert.equal(calculateRiderEarning(settings, 9), 90); // 9 × 10
 });
 
+test('rider pay adds base pay and per-km pay when a band sets both', () => {
+    const both = { deliveryFeeRanges: [{ min: 0, max: 5, fee: 30, deliveryBoyBasePay: 20, deliveryBoyPerKm: 5 }] };
+    assert.equal(calculateRiderEarning(both, 0), 20); // base only: a 0 km trip still pays
+    assert.equal(calculateRiderEarning(both, 1), 25); // 20 + 1 × 5
+    assert.equal(calculateRiderEarning(both, 3), 35); // 20 + 3 × 5
+});
+
 test('rider pay past the last band falls back rather than paying zero', () => {
     // The customer is still charged, so a 0 here would mean unpaid work on a real
     // delivery whenever the bands do not span the dispatch radius.
