@@ -476,7 +476,6 @@ export default function Cart() {
     gstRate: 0,
   })
 
-  const configuredQuickDeliveryFee = getConfiguredQuickDeliveryFee(feeSettings)
 
   const resetCartPreferences = useCallback(() => {
     setNote("")
@@ -1519,7 +1518,6 @@ export default function Cart() {
 
   const headerDeliveryTime = deliveryMode === "quick" ? "20-25 mins" : (restaurantData?.estimatedDeliveryTime || "35-40 mins")
   const basicDeliveryTime = restaurantData?.estimatedDeliveryTime || "35-40 mins"
-  const quickDeliveryTime = "20-25 mins"
   const headerAddressLabel = defaultAddress ? getDisplayAddressLabel(defaultAddress.label) : "Select address"
   const headerAddressText = defaultAddress
     ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Add delivery address")
@@ -2843,13 +2841,7 @@ export default function Cart() {
                           : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
-                      <span className="whitespace-nowrap">Delivery Modes</span>
-                      <span
-                        className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wide px-1 sm:px-1.5 py-0.5 rounded-full text-white shrink-0"
-                        style={{ backgroundColor: "var(--module-theme-color, #008078)" }}
-                      >
-                        New
-                      </span>
+                      <span className="whitespace-nowrap">Delivery</span>
                     </button>
                     <button
                       type="button"
@@ -2869,33 +2861,8 @@ export default function Cart() {
                   <div className="px-4 pb-4">
                     <button
                       type="button"
-                      onClick={() => setDeliveryMode("quick")}
-                      className="w-full flex items-start gap-3 text-left pb-3 border-b border-gray-100 dark:border-gray-800"
-                    >
-                      <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        deliveryMode === "quick" ? "border-[#008078]" : "border-gray-300 dark:border-gray-600"
-                      }`}>
-                        {deliveryMode === "quick" ? <div className="h-2.5 w-2.5 rounded-full bg-[#008078]" /> : null}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                            Quick <Zap className="inline h-3.5 w-3.5 text-[#008078] mb-0.5" /> {quickDeliveryTime}
-                          </p>
-                          <p className={`text-xs font-semibold shrink-0 ${deliveryMode === "quick" ? "text-[#008078]" : "text-gray-500"}`}>
-                            +{RUPEE_SYMBOL}{configuredQuickDeliveryFee}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          In a hurry? Get food up to 15 mins faster
-                        </p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => setDeliveryMode("basic")}
-                      className="w-full flex items-start gap-3 text-left pt-3"
+                      className="w-full flex items-start gap-3 text-left"
                     >
                       <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         deliveryMode === "basic" ? "border-[#008078]" : "border-gray-300 dark:border-gray-600"
