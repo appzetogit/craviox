@@ -2121,12 +2121,11 @@ model DeliveryFeeBand {
   /// Exclusive upper bound, km — except on the widest band, which includes it.
   maxDistanceKm Decimal @db.Decimal(8, 2)
 
-  /// What the customer pays for a trip in this band.
-  fee Decimal @db.Decimal(14, 2)
+  /// Customer delivery fee = fee + userPerKm × trip distance.
+  fee       Decimal @db.Decimal(14, 2)
+  userPerKm Decimal @default(0) @db.Decimal(14, 2)
 
-  /// Rider pay. A flat basePay wins; otherwise perKm multiplies the real
-  /// distance. They are mutually exclusive — enforced by a CHECK, not just by
-  /// the admin UI that used to be the only thing asserting it.
+  /// Rider pay = deliveryBoyBasePay + deliveryBoyPerKm × trip distance.
   deliveryBoyBasePay Decimal @default(0) @db.Decimal(14, 2)
   deliveryBoyPerKm   Decimal @default(0) @db.Decimal(14, 2)
 

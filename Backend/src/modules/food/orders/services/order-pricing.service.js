@@ -166,11 +166,10 @@ function resolveBaseDeliveryFee(feeSettings = {}) {
  * cheapest band for it would undercharge the longest deliveries, so use the
  * widest band — the same fallback calculateRiderEarning already uses for pay.
  */
-function widestBandFee(feeSettings = {}) {
+function widestBand(feeSettings = {}) {
   const bands = deliveryFeeBands(feeSettings);
   if (bands.length === 0) return null;
-  const widest = [...bands].sort((a, b) => Number(a?.max ?? 0) - Number(b?.max ?? 0)).pop();
-  return Number(widest.fee);
+  return [...bands].sort((a, b) => Number(a?.max ?? 0) - Number(b?.max ?? 0)).pop();
 }
 
 /**
@@ -230,6 +229,7 @@ const toFeeRanges = (bands = []) =>
     min: Number(band.minDistanceKm),
     max: Number(band.maxDistanceKm),
     fee: Number(band.fee),
+    userPerKm: Number(band.userPerKm || 0),
     deliveryBoyBasePay: Number(band.deliveryBoyBasePay),
     deliveryBoyPerKm: Number(band.deliveryBoyPerKm),
   }));
@@ -305,8 +305,12 @@ export function resolveUserDeliveryFee(feeSettings = {}, { subtotal = 0, distanc
     ? feeSettings.deliveryFeeRanges
     : [];
 
+  // Customer fee = band fee + band userPerKm × distance (whole rupees, like rider pay).
+  const feeFor = (range) =>
+    Math.round(Number(range.fee) + Number(range.userPerKm || 0) * Number(distanceKm));
+
   if (ranges.length > 0 && Number.isFinite(distanceKm)) {
-    const matchedFee = matchFeeRange(ranges, distanceKm, (range) => Number(range.fee));
+    const matchedFee = matchFeeRange(ranges, distanceKm, feeFor);
     if (Number.isFinite(matchedFee)) {
       return {
         deliveryFee: matchedFee,
@@ -318,7 +322,8 @@ export function resolveUserDeliveryFee(feeSettings = {}, { subtotal = 0, distanc
 
   // Distance known but past the last band — price it as the longest band.
   if (Number.isFinite(distanceKm)) {
-    const overRangeFee = widestBandFee(feeSettings);
+    const widest = widestBand(feeSettings);
+    const overRangeFee = widest ? feeFor(widest) : null;
     if (overRangeFee != null) {
       return {
         deliveryFee: overRangeFee,

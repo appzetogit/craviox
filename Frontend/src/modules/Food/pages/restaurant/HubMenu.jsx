@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { isFlutterBridgeAvailable, openGallery } from "@food/utils/imageUploadUtils"
 import { toast } from "sonner"
+import PhotoGuidelines, { warnIfLowQualityImage } from "@food/components/restaurant/PhotoGuidelines"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -534,6 +535,7 @@ export default function HubMenu() {
 
   // Handle add-on image add
   const handleAddonImageFilesAdd = (files = []) => {
+    files.forEach(warnIfLowQualityImage)
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif"]
     const validFiles = files.filter(file => {
       if (!allowedTypes.includes(file.type)) {
@@ -2536,6 +2538,7 @@ export default function HubMenu() {
                     <span className="text-sm font-medium text-gray-700">Add Images</span>
                   </button>
                   <p className="text-xs text-gray-500 mt-1">Add multiple images (PNG, JPG, WEBP - max 5MB each)</p>
+                  <PhotoGuidelines className="mt-2" />
                 </div>
               </div>
 

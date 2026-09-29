@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { isFlutterBridgeAvailable, openGallery } from "@food/utils/imageUploadUtils"
 import { toast } from "sonner"
+import PhotoGuidelines, { warnIfLowQualityImage } from "@food/components/restaurant/PhotoGuidelines"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -1153,6 +1154,7 @@ export default function Inventory() {
 
   const handleAddonImageFileSelect = (file) => {
     if (!file) return
+    warnIfLowQualityImage(file)
     const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif"]
     if (!allowed.includes(file.type)) {
       toast.error("Invalid image type. Please use PNG, JPG, JPEG, WEBP, HEIC, or HEIF.")
@@ -2531,6 +2533,7 @@ export default function Inventory() {
                         </span>
                       </button>
                       <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP, HEIC up to 5MB.</p>
+                      <PhotoGuidelines className="mt-2" />
                     </div>
                     <div className="flex items-center gap-3">
                       <button

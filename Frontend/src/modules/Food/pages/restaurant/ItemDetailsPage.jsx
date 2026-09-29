@@ -21,6 +21,7 @@ import { Switch } from "@food/components/ui/switch"
 import api from "@food/api"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
+import PhotoGuidelines, { warnIfLowQualityImage } from "@food/components/restaurant/PhotoGuidelines"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { getFoodVariants } from "@food/utils/foodVariants"
@@ -386,6 +387,7 @@ export default function ItemDetailsPage() {
   const handleImageAdd = (files) => {
     const incoming = (Array.isArray(files) ? files : [files]).filter(Boolean)
     if (incoming.length === 0) return
+    incoming.forEach(warnIfLowQualityImage)
 
     const room = MAX_ITEM_IMAGES - images.length
     if (room <= 0) {
@@ -986,6 +988,7 @@ export default function ItemDetailsPage() {
               </div>
               <span>Add Image</span>
             </button>
+            <PhotoGuidelines className="mt-3" />
           </div>
         </div>
         </div>

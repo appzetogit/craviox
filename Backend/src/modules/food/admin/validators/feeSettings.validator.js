@@ -39,6 +39,7 @@ const rangeSchema = z.object({
     min: bounded('Range start', MAX_DISTANCE_KM, ' km'),
     max: bounded('Range end', MAX_DISTANCE_KM, ' km'),
     fee: bounded('Range delivery fee', MAX_AMOUNT),
+    userPerKm: bounded('User per km amount', MAX_AMOUNT).optional().default(0),
     deliveryBoyPerKm: bounded('Per km amount', MAX_AMOUNT).optional().default(0),
     deliveryBoyBasePay: bounded('Base pay', MAX_AMOUNT).optional().default(0)
 });
@@ -71,6 +72,7 @@ export const validateFeeSettingsUpsertDto = (body) => {
                 min: Number(r?.min),
                 max: Number(r?.max),
                 fee: Number(r?.fee),
+                userPerKm: Number(r?.userPerKm || 0),
                 deliveryBoyPerKm: Number(r?.deliveryBoyPerKm || 0),
                 deliveryBoyBasePay: Number(r?.deliveryBoyBasePay || 0)
             }))

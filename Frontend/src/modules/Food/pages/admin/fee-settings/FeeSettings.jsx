@@ -36,6 +36,7 @@ export default function FeeSettings() {
     min: '', 
     max: '', 
     fee: '0', 
+    userPerKm: '0',
     deliveryBoyPerKm: '0', 
     deliveryBoyBasePay: '0' 
   })
@@ -121,6 +122,7 @@ export default function FeeSettings() {
         deliveryFee: settingsToSave.deliveryFee === "" ? undefined : Number(settingsToSave.deliveryFee),
         deliveryFeeRanges: settingsToSave.deliveryFeeRanges.map(r => ({
           ...r,
+          userPerKm: r.userPerKm === "" || r.userPerKm === undefined ? 0 : Number(r.userPerKm),
           deliveryBoyPerKm: r.deliveryBoyPerKm === "" ? 0 : Number(r.deliveryBoyPerKm),
           deliveryBoyBasePay: r.deliveryBoyBasePay === "" ? 0 : Number(r.deliveryBoyBasePay),
         })),
@@ -249,6 +251,7 @@ export default function FeeSettings() {
       min, 
       max, 
       fee, 
+      userPerKm: Number(newRange.userPerKm || 0),
       deliveryBoyPerKm: dbPerKm, 
       deliveryBoyBasePay: dbBasePay 
     }]
@@ -265,7 +268,7 @@ export default function FeeSettings() {
     await saveSettings(updatedSettings)
 
     // Reset state
-    setNewRange({ min: '', max: '', fee: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
+    setNewRange({ min: '', max: '', fee: '0', userPerKm: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
   }
 
   // Delete delivery fee range
@@ -286,6 +289,7 @@ export default function FeeSettings() {
       min: range.min, 
       max: range.max, 
       fee: range.fee || '0',
+      userPerKm: range.userPerKm ?? '0',
       deliveryBoyPerKm: range.deliveryBoyPerKm ?? '0',
       deliveryBoyBasePay: range.deliveryBoyBasePay ?? '0'
     })
@@ -332,6 +336,7 @@ export default function FeeSettings() {
       min, 
       max, 
       fee, 
+      userPerKm: Number(newRange.userPerKm || 0),
       deliveryBoyPerKm: dbPerKm, 
       deliveryBoyBasePay: dbBasePay 
     })
@@ -345,13 +350,13 @@ export default function FeeSettings() {
     setFeeSettings(updatedSettings)
     await saveSettings(updatedSettings)
 
-    setNewRange({ min: '', max: '', fee: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
+    setNewRange({ min: '', max: '', fee: '0', userPerKm: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
     setEditingRangeIndex(null)
   }
 
   // Cancel edit
   const handleCancelEdit = () => {
-    setNewRange({ min: '', max: '', fee: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
+    setNewRange({ min: '', max: '', fee: '0', userPerKm: '0', deliveryBoyPerKm: '0', deliveryBoyBasePay: '0' })
     setEditingRangeIndex(null)
   }
 
@@ -464,6 +469,7 @@ export default function FeeSettings() {
                           <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Min Distance (km)</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Max Distance (km)</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">User Delivery Fee (₹)</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">User Per KM (₹)</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">DB Per KM (₹)</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">DB Base Pay (₹)</th>
                           <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700 border-b border-slate-200">Actions</th>
@@ -528,8 +534,23 @@ export default function FeeSettings() {
                                       <span className="text-slate-400">₹</span>
                                       <input
                                         type="number"
+                                        value={newRange.userPerKm}
+                                        onChange={(e) => setNewRange({ ...newRange, userPerKm: e.target.value })}
+                                        className="w-20 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <>₹{range.userPerKm ?? 0}</>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-slate-900 border-b border-slate-100">
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-slate-400">₹</span>
+                                      <input
+                                        type="number"
                                         value={newRange.deliveryBoyPerKm}
-                                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyPerKm: e.target.value, deliveryBoyBasePay: '0' })}
+                                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyPerKm: e.target.value })}
                                         className="w-20 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
                                         placeholder="0"
                                       />
@@ -545,7 +566,7 @@ export default function FeeSettings() {
                                       <input
                                         type="number"
                                         value={newRange.deliveryBoyBasePay}
-                                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyBasePay: e.target.value, deliveryBoyPerKm: '0' })}
+                                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyBasePay: e.target.value })}
                                         className="w-20 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
                                         placeholder="0"
                                       />
@@ -613,7 +634,7 @@ export default function FeeSettings() {
                       {editingRangeIndex !== null ? 'Edit Range' : 'Add New Range'}
                     </h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">Min Distance (km)</label>
                       <input
@@ -651,11 +672,23 @@ export default function FeeSettings() {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">User Per KM (₹)</label>
+                      <input
+                        type="number"
+                        value={newRange.userPerKm}
+                        onChange={(e) => setNewRange({ ...newRange, userPerKm: e.target.value })}
+                        min="0"
+                        step="0.5"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">DB Per KM (₹)</label>
                       <input
                         type="number"
                         value={newRange.deliveryBoyPerKm}
-                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyPerKm: e.target.value, deliveryBoyBasePay: '0' })}
+                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyPerKm: e.target.value })}
                         min="0"
                         step="1"
                         className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -667,7 +700,7 @@ export default function FeeSettings() {
                       <input
                         type="number"
                         value={newRange.deliveryBoyBasePay}
-                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyBasePay: e.target.value, deliveryBoyPerKm: '0' })}
+                        onChange={(e) => setNewRange({ ...newRange, deliveryBoyBasePay: e.target.value })}
                         min="0"
                         step="1"
                         className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -694,8 +727,8 @@ export default function FeeSettings() {
                     </div>
                   </div>
                   <p className="text-xs text-slate-500 mt-2 italic">
-                    Example: 0 to 3 km charges the customer ₹20. Rider pay = DB Base Pay + DB Per KM × distance,
-                    so ₹20 base + ₹5/km pays ₹25 for 1 km and ₹35 for 3 km. Either part can be 0.
+                    Customer pays User Delivery Fee + User Per KM × distance (₹20 + ₹4/km → ₹28 for 2 km).
+                    Rider gets DB Base Pay + DB Per KM × distance (₹15 + ₹3/km → ₹21 for 2 km). Any part can be 0.
                   </p>
                 </div>
               </div>

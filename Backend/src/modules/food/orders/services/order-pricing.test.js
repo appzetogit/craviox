@@ -40,6 +40,13 @@ test('band boundaries are half-open, except the last which includes its max', ()
     assert.equal(resolveUserDeliveryFee(settings, { distanceKm: 12 }).deliveryFee, 70);
 });
 
+test('customer fee adds the band per-km rate × distance', () => {
+    const perKm = { deliveryFeeRanges: [{ min: 0, max: 7, fee: 20, userPerKm: 4 }] };
+    assert.equal(resolveUserDeliveryFee(perKm, { distanceKm: 0 }).deliveryFee, 20);
+    assert.equal(resolveUserDeliveryFee(perKm, { distanceKm: 2.5 }).deliveryFee, 30); // 20 + 2.5 × 4
+    assert.equal(resolveUserDeliveryFee(perKm, { distanceKm: 9 }).deliveryFee, 56); // past the band: widest band, 20 + 9 × 4
+});
+
 test('an unknown distance quotes the cheapest band, never the flat fee', () => {
     // The flat 99 used to win here, so carts without an address yet showed a fee
     // no band would ever have produced.
