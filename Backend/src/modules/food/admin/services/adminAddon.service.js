@@ -33,6 +33,8 @@ const serializeAddon = (a) => ({
             ownerPhone: a.restaurant.ownerPhone || '',
         }
         : null,
+    // Dishes it applies to; [] = the whole menu. The edit dialog reads this.
+    foodIds: Array.isArray(a.foodIds) ? a.foodIds : [],
     approvalStatus: a.approvalStatus || 'pending',
     rejectionReason: a.rejectionReason || '',
     requestedAt: a.requestedAt,
