@@ -66,8 +66,11 @@ export async function getBalance(entityType, entityId) {
  * Lifetime counters, which differ per entity type. Mongo tracked these with $inc
  * on the type-specific wallet model; here they are nullable columns on the one table.
  */
-function lifetimeTotals(entityType, type, amount) {
+function lifetimeTotals(entityType, type, amount, metadata) {
     if (type !== 'credit') return {};
+    // An admin bonus is tracked in totalBonus by its caller; counting it as
+    // earnings too made the rider's pocket (earnings + bonus) show it twice.
+    if (metadata?.source === 'admin_bonus') return {};
     if (entityType === 'restaurant' || entityType === 'deliveryBoy') {
         return { totalEarnings: { increment: amount } };
     }
@@ -138,7 +141,7 @@ export async function recordTransaction(payload, { client = null } = {}) {
             },
             data: {
                 balance: type === 'credit' ? { increment: value } : { decrement: value },
-                ...lifetimeTotals(entityType, type, value)
+                ...lifetimeTotals(entityType, type, value, metadata)
             }
         });
 
