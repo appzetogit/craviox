@@ -891,6 +891,13 @@ model FoodDeliveryPartner {
 
   tokenVersion Int @default(0)
 
+  /// Set when the rider deletes their own account (soft delete). The row and its
+  /// history stay; phone and vehicle number are moved here so both can be used
+  /// for a fresh registration.
+  deletedAt            DateTime?
+  deletedPhone         String?   @db.VarChar(20)
+  deletedVehicleNumber String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

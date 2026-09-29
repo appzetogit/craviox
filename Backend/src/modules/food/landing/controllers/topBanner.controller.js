@@ -10,7 +10,7 @@ export const listTopBannersController = async (req, res) => {
         const banners = await prisma.topBanner.findMany({ orderBy: { order: 'asc' } });
         res.status(200).json({ success: true, data: { banners } });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to fetch top banners', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to fetch top banners' });
     }
 };
 
@@ -52,7 +52,7 @@ export const uploadTopBannersController = async (req, res) => {
             data: { banners, errors },
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
@@ -74,7 +74,7 @@ export const deleteTopBannerController = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Banner deleted successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to delete banner', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to delete banner' });
     }
 };
 
@@ -96,7 +96,7 @@ export const updateTopBannerOrderController = async (req, res) => {
         const banner = await prisma.topBanner.findUnique({ where: { id: req.params.id } });
         res.status(200).json({ success: true, message: 'Order updated', data: { banner } });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to update order', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to update order' });
     }
 };
 
@@ -121,7 +121,7 @@ export const updateTopBannerZoneController = async (req, res) => {
         const banner = await prisma.topBanner.findUnique({ where: { id: req.params.id } });
         res.status(200).json({ success: true, message: 'Zone updated', data: { banner } });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to update zone', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to update zone' });
     }
 };
 
@@ -141,6 +141,6 @@ export const toggleTopBannerStatusController = async (req, res) => {
         });
         res.status(200).json({ success: true, message: 'Status updated', data: { banner } });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to update status', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to update status' });
     }
 };

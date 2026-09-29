@@ -960,20 +960,18 @@ export const getActiveEarningAddonsForPartner = async (deliveryPartnerId) => {
 };
 
 /**
- * Delete a delivery partner and everything that cannot outlive them.
+ * A rider deleting their own account: a SOFT delete.
  *
- * Seven tables reference a partner with ON DELETE RESTRICT, so the delete has to
- * name all of them. Mongo left every one of these orphaned — bonus rows,
- * withdrawals and cash deposits pointing at a partner that no longer existed,
- * which quietly skewed finance reports.
+ * Nothing is erased. The partner row, bonuses, withdrawals, cash deposits,
+ * tickets, orders and the wallet ledger all stay, so finance reports and
+ * reconciliation still add up. Instead the account is closed:
  *
- * The wallet and its LEDGER are deliberately not touched. `transactions` has a
- * RESTRICT foreign key to `wallets` (entityType, entityId), so deleting a wallet
- * that ever moved money fails outright — and those rows are the record of money
- * that actually moved, which reconciliation still needs after the account is
- * gone. The wallet has no FK to the partner, so it survives the delete as a
- * closed ledger. Orders and the per-order split keep their history too — those
- * FKs are ON DELETE SET NULL, so a delivered order stays delivered.
+ *  - status 'deactivated' + deletedAt: dispatch and every admin list only take
+ *    'approved' riders, so the account drops out of both;
+ *  - tokenVersion bumped: every session is rejected on its next request;
+ *  - push tokens cleared and set offline: no more order offers or alerts;
+ *  - phone and vehicle number moved to deletedPhone / deletedVehicleNumber and
+ *    freed (both carry unique indexes), so the person can register again.
  */
 export const deleteDeliveryPartnerAccount = async (partnerId) => {
     const id = String(partnerId);
@@ -1009,18 +1007,24 @@ export const deleteDeliveryPartnerAccount = async (partnerId) => {
         );
     }
 
-    const byPartner = { where: { deliveryPartnerId: id } };
+    // phone is VARCHAR(20) and unique; the placeholder must fit and be unique.
+    const freedPhone = `deleted-${id.slice(-12)}`;
 
-    await prisma.$transaction([
-        prisma.deliveryBonusTransaction.deleteMany(byPartner),
-        prisma.foodDeliveryCashDeposit.deleteMany(byPartner),
-        prisma.foodDeliveryWithdrawal.deleteMany(byPartner),
-        prisma.foodEarningAddonHistory.deleteMany(byPartner),
-        prisma.deliveryOrderEmergencyRequest.deleteMany(byPartner),
-        prisma.deliverySupportTicket.deleteMany(byPartner),
-        prisma.orderDispatchOffer.deleteMany({ where: { partnerId: id } }),
-        prisma.foodDeliveryPartner.delete({ where: { id } }),
-    ]);
+    await prisma.foodDeliveryPartner.update({
+        where: { id },
+        data: {
+            status: 'deactivated',
+            deletedAt: new Date(),
+            deletedPhone: partner.phone,
+            deletedVehicleNumber: partner.vehicleNumber || null,
+            phone: freedPhone,
+            vehicleNumber: null,
+            availabilityStatus: 'offline',
+            fcmTokens: [],
+            fcmTokenMobile: [],
+            tokenVersion: { increment: 1 },
+        },
+    });
 
     return { success: true };
 };

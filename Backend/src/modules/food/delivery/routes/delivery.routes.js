@@ -24,7 +24,7 @@ router.get('/registration-fields', getPublicFormSchemaController);
 // Public signup, so the upload limiter is the only thing bounding how often
 // an unauthenticated caller can send 25MB documents.
 router.post('/register', uploadRateLimiter, upload.any(), registerDeliveryPartnerController);
-router.get('/check-vehicle/:number', async (req, res) => {
+router.get('/check-vehicle/:number', async (req, res, next) => {
     try {
         const { prisma } = await import('../../../../config/prisma.js');
         const vNum = String(req.params.number || '').trim().toUpperCase();
@@ -43,7 +43,7 @@ router.get('/check-vehicle/:number', async (req, res) => {
             message: existing ? 'Vehicle number already registered' : 'Available' 
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        next(error);
     }
 });
 
