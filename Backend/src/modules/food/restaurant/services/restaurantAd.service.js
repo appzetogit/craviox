@@ -333,11 +333,64 @@ async function refundPrepaid(ad, amount) {
     };
 }
 
-/** The restaurant withdraws a request that has not been approved yet. */
+/**
+ * End an approved ad now, whoever asks. Charged for the days it ran (today
+ * counts); a prepaid ad gets the rest refunded, a postpaid one is only charged
+ * for those days. One that had not started yet is simply cancelled, free.
+ */
+async function endApprovedAd(ad) {
+    const now = new Date();
+    if (now > ad.endDate) throw new ValidationError('This ad has already finished');
+
+    const daysRun = now < ad.startDate
+        ? 0
+        : Math.min(ad.days, Math.round((Date.parse(`${istDay(now)}T00:00:00Z`) - Date.parse(`${istDay(ad.startDate)}T00:00:00Z`)) / DAY_MS) + 1);
+    const charged = money(num(ad.dailyBudget) * daysRun);
+
+    // Claim the ad first so two requests (admin and restaurant) cannot both
+    // end it and refund twice; the refund follows only for the winner.
+    const status = daysRun === 0 ? 'cancelled' : 'stopped';
+    const { count } = await prisma.foodRestaurantAd.updateMany({
+        where: { id: ad.id, status: 'approved' },
+        data: {
+            status,
+            chargedAmount: charged,
+            ...(status === 'cancelled' ? { cancelledAt: now } : { stoppedAt: now }),
+        },
+    });
+    if (!count) throw new ValidationError('This ad was already ended');
+
+    let refund = {};
+    try {
+        refund = await refundPrepaid(ad, num(ad.totalAmount) - charged);
+    } catch (err) {
+        logger.error(`Ad ${ad.id} ended but refund failed; refund it manually: ${err?.message || err}`);
+        throw new ValidationError('The ad was ended, but the refund could not be started. Our team will process it.');
+    }
+    const updated = Object.keys(refund).length
+        ? await prisma.foodRestaurantAd.update({ where: { id: ad.id }, data: refund })
+        : await prisma.foodRestaurantAd.findUnique({ where: { id: ad.id } });
+    await dropPromotionCaches();
+    return { updated, charged, daysRun, refund };
+}
+
+/**
+ * The restaurant cancels its ad. Before approval it is withdrawn in full; once
+ * approved it ends now on the same terms as an admin stop (endApprovedAd).
+ */
 export async function cancelRestaurantAd(restaurantId, adId) {
     const ad = await ownAd(restaurantId, adId);
+    if (ad.status === 'approved') {
+        const { updated } = await endApprovedAd(ad);
+        void notifyAdminsSafely({
+            title: 'Ad cancelled by restaurant',
+            body: `An ad (${ad.days} day(s), ₹${num(ad.totalAmount)}) was ended early by the restaurant; charged ₹${num(updated.chargedAmount)}.`,
+            data: { type: 'restaurant_ad', id: ad.id },
+        }).catch(() => {});
+        return { ad: await serializeAd(updated) };
+    }
     if (!['awaiting_payment', 'pending_approval'].includes(ad.status)) {
-        throw new ValidationError('Only an ad that is not yet approved can be cancelled. Contact support to stop a running ad.');
+        throw new ValidationError('This ad has already ended');
     }
     const refund = await refundPrepaid(ad, ad.totalAmount);
     const updated = await prisma.foodRestaurantAd.update({
@@ -436,20 +489,7 @@ export async function rejectAd(adId, reason) {
 export async function stopAd(adId) {
     const ad = await adForAdmin(adId);
     if (ad.status !== 'approved') throw new ValidationError('Only an approved ad can be stopped');
-    const now = new Date();
-    if (now > ad.endDate) throw new ValidationError('This ad has already finished');
-
-    const daysRun = now < ad.startDate
-        ? 0
-        : Math.min(ad.days, Math.round((Date.parse(`${istDay(now)}T00:00:00Z`) - Date.parse(`${istDay(ad.startDate)}T00:00:00Z`)) / DAY_MS) + 1);
-    const charged = money(num(ad.dailyBudget) * daysRun);
-    const refund = await refundPrepaid(ad, num(ad.totalAmount) - charged);
-
-    const updated = await prisma.foodRestaurantAd.update({
-        where: { id: ad.id },
-        data: { status: 'stopped', stoppedAt: now, chargedAmount: charged, ...refund },
-    });
-    await dropPromotionCaches();
+    const { updated, charged, daysRun, refund } = await endApprovedAd(ad);
     tellRestaurant(
         ad,
         'Your ad was stopped',
@@ -462,7 +502,7 @@ export async function stopAd(adId) {
 export async function sumPostpaidAdCharges(restaurantIds, { db = prisma } = {}) {
     const rows = await db.foodRestaurantAd.groupBy({
         by: ['restaurantId'],
-        where: { restaurantId: { in: restaurantIds }, paymentMode: 'postpaid', status: { in: ['approved', 'stopped'] } },
+        where: { restaurantId: { in: restaurantIds }, paymentMode: 'postpaid', status: { in: ['approved', 'stopped'] }, chargedAmount: { gt: 0 } },
         _sum: { chargedAmount: true },
     });
     return new Map(rows.map((r) => [r.restaurantId, num(r._sum.chargedAmount)]));

@@ -223,7 +223,10 @@ function CreateAd({ config, onDone, onCancel }) {
 
 function AdCard({ ad, onPay, onCancel, busy }) {
   const [label, cls] = STATUS[ad.displayStatus] || [ad.displayStatus, "bg-slate-100 text-slate-700"]
-  const canCancel = ["awaiting_payment", "pending_approval"].includes(ad.status)
+  // Before approval it is withdrawn; once approved (scheduled or live) it ends now.
+  const canCancel =
+    ["awaiting_payment", "pending_approval"].includes(ad.status) ||
+    (ad.status === "approved" && ["scheduled", "live"].includes(ad.displayStatus))
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4">
       <div className="flex items-start justify-between gap-2">
@@ -240,6 +243,9 @@ function AdCard({ ad, onPay, onCancel, busy }) {
         <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">Reason: {ad.rejectionReason}</p>
       )}
       {ad.refundedAmount > 0 && <p className="mt-2 text-xs text-gray-600">Refunded {inr(ad.refundedAmount)} to your payment method.</p>}
+      {ad.status === "stopped" && (
+        <p className="mt-2 text-xs text-gray-600">Ended early · charged {inr(ad.chargedAmount)}</p>
+      )}
       {["live", "completed", "stopped"].includes(ad.displayStatus) && (
         <div className="mt-3 grid grid-cols-2 gap-2 text-center">
           <div className="rounded-xl bg-gray-50 py-2">
@@ -261,7 +267,7 @@ function AdCard({ ad, onPay, onCancel, busy }) {
           )}
           {canCancel && (
             <button type="button" disabled={busy} onClick={() => onCancel(ad)} className="flex-1 rounded-xl border border-gray-300 py-2 text-xs font-semibold text-gray-700 disabled:opacity-50">
-              Cancel{ad.paymentStatus === "paid" ? " & refund" : ""}
+              {ad.displayStatus === "live" ? "Stop ad" : `Cancel${ad.paymentStatus === "paid" ? " & refund" : ""}`}
             </button>
           )}
         </div>
@@ -331,11 +337,22 @@ export default function Advertisements() {
   }
 
   const cancel = async (ad) => {
-    if (!window.confirm(ad.paymentStatus === "paid" ? "Cancel this ad and refund the payment?" : "Cancel this ad request?")) return
+    const paid = ad.paymentStatus === "paid"
+    let message
+    if (ad.displayStatus === "live") {
+      message = `Stop this ad now? You are charged ${inr(ad.dailyBudget)} for each day it has run, today included.${
+        paid ? " The rest of your payment is refunded." : ""
+      }`
+    } else if (ad.displayStatus === "scheduled") {
+      message = `Cancel this ad before it starts?${paid ? ` Your ${inr(ad.totalAmount)} is refunded in full.` : " You will not be charged."}`
+    } else {
+      message = paid ? "Cancel this ad and refund the payment?" : "Cancel this ad request?"
+    }
+    if (!window.confirm(message)) return
     try {
       setBusyId(ad.id)
       await restaurantAPI.cancelAd(ad.id)
-      toast.success("Ad cancelled")
+      toast.success(ad.displayStatus === "live" ? "Ad stopped" : "Ad cancelled")
       await load()
     } catch (error) {
       toast.error(error?.response?.data?.message || "Could not cancel")
