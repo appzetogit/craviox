@@ -76,6 +76,7 @@ export default function DeliverymanList() {
       const params = {
         page: 1,
         limit: 1000, // Get all for now
+        includeDeleted: true,
       }
 
       // Add search to params if provided
@@ -634,7 +635,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                     </tr>
                   ) : (
                     filteredDeliverymen.map((dm) => (
-                      <tr key={dm._id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={dm._id} className={`transition-colors ${dm.isDeleted ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50"}`}>
                         {visibleColumns.si && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-slate-700">{dm.sl}</span>
@@ -674,6 +675,14 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                                     onClick={() => handleView(dm)}
                                   >
                                     {dm.name}
+                                  </span>
+                                )}
+                                {dm.isDeleted && (
+                                  <span
+                                    title={dm.deletedAt ? `Deleted by the rider on ${new Date(dm.deletedAt).toLocaleString("en-IN")}` : "Deleted by the rider"}
+                                    className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700"
+                                  >
+                                    Deleted account
                                   </span>
                                 )}
                                 {dm.rating > 0 && editingDeliveryId !== String(dm._id) && (
@@ -760,6 +769,12 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                         )}
                         {visibleColumns.availabilityStatus && (
                           <td className="px-6 py-4">
+                            {dm.isDeleted ? (
+                              <span className="text-xs font-semibold text-red-700">
+                                Account deleted
+                                {dm.deletedAt ? ` on ${new Date(dm.deletedAt).toLocaleDateString("en-GB")}` : ""}
+                              </span>
+                            ) : (
                             <div className="flex flex-col gap-1">
                               <span className="text-xs">
                                 Active Status: <span className={`${dm.status === 'Online' ? 'text-blue-600' : 'text-slate-600'} underline`}>{dm.status}</span>
@@ -779,12 +794,13 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                                 </span>
                               ) : null}
                             </div>
+                            )}
                           </td>
                         )}
                         {visibleColumns.actions && (
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
-                              {editingDeliveryId === String(dm._id) ? (
+                              {dm.isDeleted ? null : editingDeliveryId === String(dm._id) ? (
                                 <>
                                   <button
                                     onClick={() => saveWalletChanges(dm)}
@@ -819,6 +835,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {!dm.isDeleted && (
                               <button
                                 onClick={() => handleDelete(dm)}
                                 disabled={deletingDeliveryId === String(dm._id)}
@@ -831,6 +848,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                                   <Trash2 className="w-4 h-4" />
                                 )}
                               </button>
+                              )}
                             </div>
                           </td>
                         )}

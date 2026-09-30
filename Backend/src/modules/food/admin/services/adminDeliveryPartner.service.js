@@ -153,6 +153,11 @@ const serializePartner = (doc, stats = {}, sl = 0) => {
         // sat unreachable for hours while the list showed them green.
         hasPushToken:
             (doc.fcmTokenMobile || []).length > 0 || (doc.fcmTokens || []).length > 0,
+        // A rider who deleted their own account: kept for the records, with the
+        // phone number they used (the live column holds a placeholder).
+        isDeleted: Boolean(doc.deletedAt),
+        deletedAt: doc.deletedAt || null,
+        ...(doc.deletedAt ? { phone: doc.deletedPhone || '' } : {}),
         profilePhoto: doc.profilePhoto || null,
         profileImage: doc.profilePhoto ? { url: doc.profilePhoto } : null,
         totalOrders: stats.totalOrders || 0,
@@ -172,7 +177,7 @@ const searchWhere = (search) => {
     return {
         OR: [
             { name: contains }, { phone: contains }, { email: contains },
-            { city: contains }, { state: contains },
+            { city: contains }, { state: contains }, { deletedPhone: contains },
         ],
     };
 };
@@ -182,7 +187,18 @@ export async function getDeliveryPartners(query = {}) {
     const page = Math.max(1, Number(query.page) || 1);
     const skip = (page - 1) * limit;
 
-    const where = { status: 'approved', ...searchWhere(query.search) };
+    // `includeDeleted=true` (the Delivery Partners screen) also lists riders who
+    // deleted their account. Everything else — tracking, bonuses, broadcasts —
+    // keeps to active riders.
+    const includeDeleted = String(query.includeDeleted) === 'true';
+    const where = {
+        AND: [
+            includeDeleted
+                ? { OR: [{ status: 'approved' }, { deletedAt: { not: null } }] }
+                : { status: 'approved' },
+            searchWhere(query.search),
+        ],
+    };
 
     const [list, total] = await Promise.all([
         prisma.foodDeliveryPartner.findMany({
