@@ -952,11 +952,21 @@ export const getActiveEarningAddonsForPartner = async (deliveryPartnerId) => {
                 endDate,
                 validTill: endDate ? endDate.toISOString() : null,
                 isLive: true,
+                // The names the released delivery app reads (it shows
+                // requiredOrders / earningAmount); same values as above.
+                requiredOrders: num(addon.requiredOrders),
+                requiredOnlineMinutes: num(addon.requiredOnlineMinutes),
+                earningAmount: num(addon.earningAmount),
             };
         }),
     );
 
-    return { activeOffer: offers[0] || null, offers };
+    // A plain list, which is what the released delivery app parses (it treats
+    // anything else as "no incentives"). Delivery-count incentives first: the
+    // app shows only the first one and can only render an orders target.
+    return offers.sort(
+        (a, b) => Number(b.criteria === 'orders') - Number(a.criteria === 'orders'),
+    );
 };
 
 /**

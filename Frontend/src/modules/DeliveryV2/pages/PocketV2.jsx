@@ -106,7 +106,10 @@ export const PocketV2 = () => {
           (walletRes.status === "fulfilled" && walletRes.value?.data?.wallet) ||
           {};
         const activeAddonsRes = await deliveryAPI.getActiveEarningAddons().catch(() => null);
+        // The API returns a list of live incentives (earlier: { activeOffer, offers }).
+        const addonsData = activeAddonsRes?.data?.data
         const activeOfferPayload =
+          (Array.isArray(addonsData) ? addonsData[0] : null) ||
           activeAddonsRes?.data?.data?.activeOffer ||
           activeAddonsRes?.data?.activeOffer ||
           null;
