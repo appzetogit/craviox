@@ -211,8 +211,53 @@ export async function getDeliveryPartnerById(id) {
     if (!doc) return null;
 
     const stats = (await getBulkDeliveryPartnerStats([doc.id])).get(doc.id) || {};
-    return serializePartner(doc, stats, 1);
+    return { ...serializePartner(doc, stats, 1), ...serializePartnerDetails(doc) };
 }
+
+/**
+ * What the admin's view dialog (join requests, partner list) reads beyond the
+ * list row: the uploaded documents, vehicle, address and bank details. The
+ * list endpoints leave these out; the dialog showed no documents because this
+ * endpoint did too.
+ */
+const serializePartnerDetails = (doc) => {
+    const custom =
+        doc.customDocuments && typeof doc.customDocuments === 'object' ? doc.customDocuments : {};
+    return {
+        createdAt: doc.createdAt || null,
+        rejectionReason: doc.rejectionReason || null,
+        location: {
+            addressLine: doc.address || '',
+            city: doc.city || '',
+            state: doc.state || '',
+        },
+        vehicle: {
+            type: doc.vehicleType || '',
+            brand: doc.vehicleName || '',
+            model: '',
+            number: doc.vehicleNumber || '',
+        },
+        documents: {
+            aadhar: { number: doc.aadharNumber || '', document: doc.aadharPhoto || '' },
+            pan: { number: doc.panNumber || '', document: doc.panPhoto || '' },
+            drivingLicense: { number: doc.drivingLicenseNumber || '', document: doc.drivingLicensePhoto || '' },
+            // There is no RC upload; the vehicle number is what riders give.
+            vehicleRC: { number: doc.vehicleNumber || '', document: '' },
+            bankDetails: {
+                accountHolderName: doc.bankAccountHolderName || '',
+                accountNumber: doc.bankAccountNumber || '',
+                ifscCode: doc.bankIfscCode || '',
+                bankName: doc.bankName || '',
+                upiId: doc.upiId || '',
+                upiQrCode: doc.upiQrCode || '',
+            },
+            // Admin-defined registration uploads, field key → URL.
+            custom: Object.entries(custom)
+                .filter(([, url]) => typeof url === 'string' && url)
+                .map(([key, url]) => ({ key, document: url })),
+        },
+    };
+};
 
 /**
  * Applications that are not yet approved.
