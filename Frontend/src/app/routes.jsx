@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { AppShellSkeleton } from '@food/components/ui/loading-skeletons'
-import LandingPage from './LandingPage'
-import { isFeatureEnabled, loadCorePublicAppConfig } from '@food/services/publicAppConfig'
 
 const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 
@@ -36,32 +34,6 @@ const RedirectToFood = () => {
   // and turns them into '/food/restaurant/login'
   return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
 };
-
-const RootEntryRoute = () => {
-  const [loading, setLoading] = useState(true)
-  const [showLandingAtRoot, setShowLandingAtRoot] = useState(true)
-
-  useEffect(() => {
-    const loadFeatureSettings = async () => {
-      try {
-        await loadCorePublicAppConfig()
-        setShowLandingAtRoot(
-          isFeatureEnabled("root_landing_and_unregistered_control", true),
-        )
-      } catch (_error) {
-        // fallback to landing page when API is unavailable
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadFeatureSettings()
-  }, [])
-
-  if (loading) return <PageLoader />
-  if (!showLandingAtRoot) return <Navigate to="/food/user" replace />
-  return <LandingPage />
-}
-
 
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
 const PublicCMSPage = lazy(() => import('./PublicCMSPage'))
@@ -97,8 +69,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Root → Master Landing Page */}
-      <Route path="/" element={<RootEntryRoute />} />
+      {/* The customer app's Home lives at /home (see Food/routes.jsx). */}
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home/*" element={<FoodAppWrapper />} />
 
       {/* Public support + legal pages: no login, content managed in admin */}
       <Route path="/support" element={publicPage('support')} />

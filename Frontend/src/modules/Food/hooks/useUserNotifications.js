@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { API_BASE_URL } from '@food/api/config';
 import { userAPI } from '@food/api';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
+import { isModuleAuthenticated } from "@food/utils/auth";
 
 const debugLog = (...args) => {
   if (import.meta.env.DEV) {
@@ -23,6 +24,8 @@ export const useUserNotifications = () => {
   // Fetch current user ID
   useEffect(() => {
     const fetchUserId = async () => {
+      // Signed out: nobody to notify, and the profile call would only 401.
+      if (!isModuleAuthenticated("user")) return;
       try {
         const response = await userAPI.getProfile();
         if (response.data?.success && response.data.data?.user) {

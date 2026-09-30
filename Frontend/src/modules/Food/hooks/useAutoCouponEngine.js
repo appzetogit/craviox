@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { orderAPI, restaurantAPI } from "@food/api"
+import { isModuleAuthenticated } from "@food/utils/auth"
 import {
   AUTO_COUPON_APPLIED_EVENT,
   buildCartItemsForPricing,
@@ -87,6 +88,11 @@ export default function useAutoCouponEngine({ deliveryMode = "basic", enabled = 
   const userOrderCountRef = useRef(0)
 
   useEffect(() => {
+    // Signed out: no order history to count (and the call would only 401).
+    if (!isModuleAuthenticated("user")) {
+      userOrderCountRef.current = 0
+      return undefined
+    }
     let active = true
     orderAPI
       .getOrders({ page: 1, limit: 1 })

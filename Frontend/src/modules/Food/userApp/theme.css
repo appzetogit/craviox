@@ -1,0 +1,217 @@
+/*
+ * Design tokens for the customer screens, copied from the Flutter user app
+ * (craviox_user/lib/src/presentation/branding). The app was designed at
+ * 375px wide; sizes in these screens are that design's logical pixels.
+ *
+ * Primary shades follow AppColors: the primary's hue with a fixed HSL
+ * lightness. #EB2E00 is hsl(11.74 100% 46%).
+ */
+.ca-app {
+  --ca-primary: #eb2e00;
+  --ca-primary-light: hsl(11.74 100% 62%);
+  --ca-primary-deep: hsl(11.74 100% 42%);
+  --ca-primary-deep-text: hsl(11.74 85% 30%);
+  --ca-primary-tint: hsl(11.74 90% 96%);
+  --ca-primary-tint-strong: hsl(11.74 90% 91%);
+  --ca-primary-soft: hsl(11.74 90% 80%);
+  --ca-header: #eb2e00;
+
+  --ca-bg: #fafdff;
+  --ca-surface: #ffffff;
+  --ca-card: #ffffff;
+  --ca-card-border: #cbd5e1;
+  --ca-border: #e2e8f0;
+  --ca-title: #0f172a;
+  --ca-text: #334155;
+  --ca-muted: #64748b;
+  --ca-faint: #94a3b8;
+  --ca-shadow: rgba(0, 0, 0, 0.08);
+
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  color: var(--ca-title);
+  background: var(--ca-bg);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .ca-app {
+  --ca-primary-tint: hsl(11.74 35% 12%);
+  --ca-primary-tint-strong: hsl(11.74 40% 20%);
+  --ca-primary-soft: hsl(11.74 90% 80%);
+  --ca-primary-deep-text: #ffffff;
+
+  --ca-bg: #121212;
+  --ca-surface: #1b1b1b;
+  --ca-card: #242424;
+  --ca-card-border: #3d3d3d;
+  --ca-border: #303030;
+  --ca-title: #ffffff;
+  --ca-text: #e2e8f0;
+  --ca-muted: #94a3b8;
+  --ca-faint: #64748b;
+  --ca-shadow: transparent;
+}
+
+/* Material Symbols Rounded, filled by default like Flutter's *_rounded icons.
+   `#root .ca-icon` + !important: the admin's font setting is applied as
+   `#root * { font-family: … !important }`, which would otherwise win. */
+#root .ca-icon,
+.ca-icon {
+  font-family: "Material Symbols Rounded" !important;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 1;
+  user-select: none;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ca-icon.ca-icon-outlined {
+  font-variation-settings: "FILL" 0;
+}
+
+.ca-noscroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ca-noscroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Swipe carousels: one slide per snap point. */
+.ca-snap-x {
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+.ca-snap-x > * {
+  scroll-snap-align: start;
+}
+
+@keyframes ca-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ca-card-in {
+  animation: ca-card-in 500ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+@keyframes ca-ticker-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ca-ticker-up {
+  animation: ca-ticker-up 400ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+@keyframes ca-ticker-left {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ca-ticker-left {
+  animation: ca-ticker-left 450ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+@keyframes ca-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes ca-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ca-sheet {
+  animation: ca-sheet-up 280ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+.ca-fade-in {
+  animation: ca-fade-in 200ms ease-out both;
+}
+
+@keyframes ca-marquee {
+  0%,
+  30% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(var(--ca-marquee-shift, 0px));
+  }
+}
+.ca-marquee {
+  animation: ca-marquee var(--ca-marquee-duration, 4s) ease-in-out infinite;
+}
+
+@keyframes ca-glow-sweep {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+.ca-glow-sweep {
+  animation: ca-glow-sweep 2.6s ease-in-out infinite;
+}
+
+@keyframes ca-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.ca-bump {
+  animation: ca-bump 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ca-card-in,
+  .ca-ticker-up,
+  .ca-ticker-left,
+  .ca-sheet,
+  .ca-marquee,
+  .ca-glow-sweep,
+  .ca-bump {
+    animation: none;
+  }
+}
