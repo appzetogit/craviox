@@ -499,6 +499,8 @@ export async function notifyRestaurantNewOrder(orderDoc) {
         `[RestaurantOrders] Emitting new_order to ${rooms.restaurant(orderDoc.restaurantId)} for order ${orderDoc._id?.toString?.() || ''}`,
       );
       io.to(rooms.restaurant(orderDoc.restaurantId)).emit("new_order", payload);
+      // The admin orders page rings and refreshes on this.
+      io.to(rooms.admin()).emit("admin_new_order", payload);
     }
 
     // Atomic claim: only the caller that flips restaurantNotifiedAt from null actually

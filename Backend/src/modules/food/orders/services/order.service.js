@@ -343,6 +343,7 @@ async function expireUnacceptedOrders(where = {}) {
         };
         io.to(rooms.user(updated.userId)).emit("order_status_update", payload);
         io.to(rooms.restaurant(updated.restaurantId)).emit("order_status_update", payload);
+        io.to(rooms.admin()).emit("order_status_update", payload);
       }
     } catch (err) {
       logger.warn(`expireUnacceptedOrders socket emit failed: ${err?.message || err}`);
@@ -1418,6 +1419,7 @@ export async function cancelOrder(orderId, userId, reason) {
       };
       io.to(rooms.user(userId)).emit("order_status_update", payload);
       io.to(rooms.restaurant(updated.restaurantId)).emit("order_status_update", payload);
+      io.to(rooms.admin()).emit("order_status_update", payload);
     }
   } catch (err) {
     logger.warn(`cancelOrder socket emit failed: ${err?.message || err}`);
@@ -1808,6 +1810,7 @@ export async function updateOrderStatusRestaurant(orderId, restaurantId, orderSt
     if (io) {
       io.to(rooms.restaurant(restaurantId)).emit("order_status_update", payload);
       io.to(rooms.user(updated.userId)).emit("order_status_update", payload);
+      io.to(rooms.admin()).emit("order_status_update", payload);
       const assignedRiderId = row.dispatchDeliveryPartnerId;
       if (assignedRiderId) {
         io.to(rooms.delivery(assignedRiderId)).emit("order_status_update", payload);

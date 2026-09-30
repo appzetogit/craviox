@@ -164,6 +164,10 @@ async function deassignOrderForRedispatch({
             ...payload,
             dispatchStatus: 'unassigned',
         });
+        io.to(rooms.admin()).emit('order_status_update', {
+            ...payload,
+            dispatchStatus: 'unassigned',
+        });
     }
 
     await notifyOwnersSafely(

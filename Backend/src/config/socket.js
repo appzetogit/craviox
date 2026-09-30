@@ -130,6 +130,9 @@ export const initSocket = async (server) => {
                 });
             }
             if (role === 'ADMIN') socket.join(roomNames.admin());
+            socket.on('join-admin-orders', () => {
+                if (socket.user?.role === 'ADMIN') socket.join(roomNames.admin());
+            });
         }
 
         // ─── Chat: typing indicator relay (messages themselves go over REST) ───

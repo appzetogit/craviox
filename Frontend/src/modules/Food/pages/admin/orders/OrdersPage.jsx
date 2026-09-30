@@ -4,7 +4,8 @@ import io from "socket.io-client"
 import { FileText, Package } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
-import { toast } from "sonner"
+import { toast } from "sonner"
+
 import { usePaginationParams } from "@food/hooks/usePaginationParams"
 import OrdersTopbar from "@food/components/admin/orders/OrdersTopbar"
 import OrdersTable from "@food/components/admin/orders/OrdersTable"
@@ -881,6 +882,17 @@ export default function OrdersPage({ statusKey = "all" }) {
     fetchOrdersRef.current({ silent: false, withRingCheck: false, page: apiPage, force: true })
   }, [statusKey, debouncedSearchQuery, appliedFilters, apiPage, pageSize])
 
+  // Other tabs: a quiet refresh every 20s, only while the live socket is down.
+  useEffect(() => {
+    if (statusKey === "all") return undefined
+    const pollId = setInterval(() => {
+      if (!socketConnectedRef.current && document.visibilityState === "visible") {
+        fetchOrdersRef.current({ silent: true, withRingCheck: false, force: true })
+      }
+    }, 20000)
+    return () => clearInterval(pollId)
+  }, [statusKey])
+
   useEffect(() => {
     if (statusKey !== "all") return undefined
 
@@ -892,15 +904,26 @@ export default function OrdersPage({ statusKey = "all" }) {
   }, [statusKey])
 
   useEffect(() => {
-    if (statusKey !== "all") return undefined
+    // Live updates on every tab: a cancelled, accepted or delivered order moves
+    // between tabs, so each one must refresh. Only "all" rings for new orders.
+    const ringsForNewOrders = statusKey === "all"
 
-    const backendUrl = API_BASE_URL.replace(/\/api\/?$/, "")
-    // Backend disconnected - do not open Socket.IO (new backend in progress)
-    if (!API_BASE_URL || !backendUrl || !backendUrl.startsWith("http")) {
+    // API_BASE_URL is ".../api/v1"; the socket lives on the site origin.
+    let backendUrl = ""
+    try {
+      backendUrl = new URL(API_BASE_URL, window.location.origin).origin
+    } catch {
+      backendUrl = String(API_BASE_URL || "").replace(/\/api(\/v\d+)?\/?$/, "")
+    }
+    if (!backendUrl || !backendUrl.startsWith("http")) {
       return undefined
     }
 
     const socket = io(backendUrl, {
+      path: "/socket.io/",
+      // A function, so every reconnect sends the current token rather than the
+      // one from page load (admin access tokens last 15 minutes).
+      auth: (cb) => cb({ token: localStorage.getItem("admin_accessToken") || "" }),
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -911,6 +934,10 @@ export default function OrdersPage({ statusKey = "all" }) {
     socketRef.current = socket
 
     const handleIncomingRealtimeOrder = (payload = {}) => {
+      if (!ringsForNewOrders) {
+        fetchOrdersRef.current({ silent: true, withRingCheck: false, force: true })
+        return
+      }
       const orderId = payload?.orderId || payload?.orderMongoId || ""
       if (!orderId) {
         activeOrderAlertRef.current = payload || { orderId: "socket-new-order" }
@@ -944,12 +971,27 @@ export default function OrdersPage({ statusKey = "all" }) {
       fetchOrdersRef.current({ silent: true, withRingCheck: false, force: true })
     }
 
+    let wasConnected = false
+    let authRetryId = null
     socket.on("connect", () => {
       socketConnectedRef.current = true
       socket.emit("join-admin-orders")
+      // Catch up on anything that changed while the socket was down.
+      if (wasConnected) fetchOrdersRef.current({ silent: true, withRingCheck: false, force: true })
+      wasConnected = true
     })
     socket.on("disconnect", () => {
       socketConnectedRef.current = false
+    })
+    // A rejected handshake (e.g. an expired token) is not retried by socket.io;
+    // try again shortly, by which time API calls have refreshed the token.
+    socket.on("connect_error", () => {
+      socketConnectedRef.current = false
+      if (socket.active || authRetryId) return
+      authRetryId = setTimeout(() => {
+        authRetryId = null
+        socket.connect()
+      }, 10000)
     })
     // An order moving past 'created' (restaurant accepted / cancelled) means it no longer
     // needs admin action — stop the alarm and refresh so the popup clears.
@@ -967,6 +1009,7 @@ export default function OrdersPage({ statusKey = "all" }) {
 
     return () => {
       socketConnectedRef.current = false
+      clearTimeout(authRetryId)
       socket.off("admin_new_order", handleIncomingRealtimeOrder)
       socket.off("play_notification_sound", handleIncomingRealtimeOrder)
       socket.off("order_status_update", handleRealtimeStatusChange)
