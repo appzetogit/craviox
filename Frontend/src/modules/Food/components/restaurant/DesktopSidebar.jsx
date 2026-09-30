@@ -22,6 +22,7 @@ import {
   Compass,
   Wallet,
   CreditCard,
+  Megaphone,
 } from "lucide-react"
 import { restaurantAPI } from "@food/api"
 import { getCompanyName, getModuleLogoUrl, getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
@@ -54,6 +55,12 @@ const sections = [
       { name: "Outlet timings", path: `${BASE}/outlet-timings`, icon: Clock },
       { name: "Menu categories", path: `${BASE}/menu-categories`, icon: LayoutGrid },
       { name: "Offers & Coupons", path: `${BASE}/coupon`, icon: FileCheck },
+    ],
+  },
+  {
+    title: "GROWTH",
+    items: [
+      { name: "Advertisements", path: `${BASE}/advertisements`, icon: Megaphone },
     ],
   },
   {

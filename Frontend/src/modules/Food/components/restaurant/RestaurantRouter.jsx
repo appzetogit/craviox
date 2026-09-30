@@ -62,6 +62,7 @@ const Signup = lazy(() => import("@food/pages/restaurant/auth/Signup"))
 const ForgotPassword = lazy(() => import("@food/pages/restaurant/auth/ForgotPassword"))
 const VerificationPending = lazy(() => import("@food/pages/restaurant/auth/VerificationPending"))
 const Subscription = lazy(() => import("@food/pages/restaurant/Subscription"))
+const Advertisements = lazy(() => import("@food/pages/restaurant/Advertisements"))
 
 export default function RestaurantRouter() {
   // Safely enforce light mode for the Restaurant app to prevent User dark mode bleeding
@@ -137,6 +138,7 @@ export default function RestaurantRouter() {
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><ItemDetailsPage /></ProtectedRoute>} path="hub-menu/item/:id" />
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><HubFinance /></ProtectedRoute>} path="hub-finance" />
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><Subscription /></ProtectedRoute>} path="subscription" />
+          <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><Advertisements /></ProtectedRoute>} path="advertisements" />
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><WithdrawalHistoryPage /></ProtectedRoute>} path="withdrawal-history" />
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><FinanceDetailsPage /></ProtectedRoute>} path="finance-details" />
           <Route element={<ProtectedRoute requiredRole="restaurant" loginPath="/food/restaurant/login"><PhoneNumbersPage /></ProtectedRoute>} path="phone" />

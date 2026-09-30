@@ -316,6 +316,11 @@ export default function ProfessionalSearch() {
                              Matched: {r.matchedDish || query}
                           </div>
                           <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{r.restaurantName}</h3>
+                          {r.isPromoted && (
+                            <span className="mt-0.5 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                              Promoted
+                            </span>
+                          )}
                           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400 mt-1">
                              <div className="flex items-center gap-1">
                                 <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
@@ -353,6 +358,11 @@ export default function ProfessionalSearch() {
                         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                            <div>
                               <h3 className="text-xl font-bold text-white mb-1">{r.restaurantName}</h3>
+                              {r.isPromoted && (
+                                <span className="mb-1 inline-flex rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-950">
+                                  Promoted
+                                </span>
+                              )}
                               <p className="text-white/80 text-xs line-clamp-1">{r.cuisines?.join(", ")}</p>
                            </div>
                            <div className="bg-white/20 backdrop-blur-md border border-white/30 px-2 py-1 rounded-lg flex items-center gap-1">

@@ -1314,6 +1314,12 @@ export const adminAPI = {
       params: params ?? {},
       contextModule: "admin",
     }),
+  /** Restaurant ad campaigns (Promotions → Restaurant Ads). tab: pending|live|scheduled|completed|rejected|all */
+  getRestaurantAds: (params = {}) => apiClient.get("/food/admin/ads", { params, contextModule: "admin" }),
+  approveRestaurantAd: (id) => apiClient.patch(`/food/admin/ads/${String(id)}/approve`, {}, { contextModule: "admin" }),
+  rejectRestaurantAd: (id, reason) =>
+    apiClient.patch(`/food/admin/ads/${String(id)}/reject`, { reason }, { contextModule: "admin" }),
+  stopRestaurantAd: (id) => apiClient.patch(`/food/admin/ads/${String(id)}/stop`, {}, { contextModule: "admin" }),
   /** Admin creates an add-on for a restaurant (live at once; foodIds [] = all dishes). */
   createRestaurantAddon: (body) =>
     apiClient.post("/food/admin/addons", body ?? {}, { contextModule: "admin" }),
@@ -1388,6 +1394,15 @@ export const restaurantAPI = {
   /** Restaurant dashboard: always fetch fresh profile data. */
   getCurrentRestaurant: () =>
     apiClient.get("/food/restaurant/current", { contextModule: "restaurant" }),
+  /** Advertisements (Growth). Prepaid: create → Razorpay → verifyAdPayment. */
+  getAdConfig: () => apiClient.get("/food/restaurant/ads/config", { contextModule: "restaurant" }),
+  quoteAd: (body) => apiClient.post("/food/restaurant/ads/quote", body ?? {}, { contextModule: "restaurant" }),
+  getAds: () => apiClient.get("/food/restaurant/ads", { contextModule: "restaurant" }),
+  createAd: (body) => apiClient.post("/food/restaurant/ads", body ?? {}, { contextModule: "restaurant" }),
+  payAd: (id) => apiClient.post(`/food/restaurant/ads/${String(id)}/pay`, {}, { contextModule: "restaurant" }),
+  verifyAdPayment: (id, body) =>
+    apiClient.post(`/food/restaurant/ads/${String(id)}/verify-payment`, body ?? {}, { contextModule: "restaurant" }),
+  cancelAd: (id) => apiClient.post(`/food/restaurant/ads/${String(id)}/cancel`, {}, { contextModule: "restaurant" }),
   /** Finance dashboard for `hub-finance`. */
   getFinance: (params = {}) =>
     apiClient.get("/food/restaurant/finance", {

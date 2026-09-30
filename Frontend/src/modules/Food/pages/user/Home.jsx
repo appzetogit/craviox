@@ -656,6 +656,11 @@ const RestaurantCard = React.memo(({
                           ? "Open now"
                           : "Offline"}
                       </span>
+                      {restaurant.isPromoted && (
+                        <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-amber-700">
+                          Promoted
+                        </span>
+                      )}
                       {availability.isOpen &&
                         availability.closingCountdownLabel &&
                         availability.openingTime &&
@@ -2057,6 +2062,7 @@ export default function Home() {
                 slug: restaurant.slug,
                 restaurantId: restaurant.restaurantId,
                 pureVegRestaurant: restaurant.pureVegRestaurant === true,
+                isPromoted: restaurant.isPromoted === true,
                 location: restaurantLoc || restaurant.location, // Normalized for distance recalculation
                 isActive: restaurant.isActive !== false, // Default to true if not specified
                 isAcceptingOrders: restaurant.isAcceptingOrders !== false, // Default to true if not specified
@@ -2081,6 +2087,11 @@ export default function Home() {
 
               if (aAvailable !== bAvailable) {
                 return aAvailable ? -1 : 1; // Available restaurants come first
+              }
+
+              // Then restaurants running an ad (the API already lists them first)
+              if (Boolean(a.isPromoted) !== Boolean(b.isPromoted)) {
+                return a.isPromoted ? -1 : 1;
               }
 
               // Apply secondary sort based on sortBy filter

@@ -1,6 +1,7 @@
 import { prisma } from '../../../../config/prisma.js';
 import { isId } from '../../../../utils/helpers.js';
 import { toRestaurant } from '../../restaurant/restaurant.mapper.js';
+import { getPromotedRestaurants } from '../../restaurant/services/restaurantAd.service.js';
 import { restaurantIdsMatchingCuisine } from '../../shared/restaurantQuery.util.js';
 
 /** Columns the search cards need, plus the address columns toRestaurant() rebuilds `location` from. */
@@ -185,6 +186,13 @@ export const searchUnified = async (query = {}, options = {}) => {
             .sort((a, b) => (a.distanceScore || 999) - (b.distanceScore || 999));
     }
 
+    // Restaurants with a live ad lead, keeping the order above among themselves
+    // (Array.prototype.sort is stable).
+    const promoted = (await getPromotedRestaurants()).ids;
+    if (promoted.size) {
+        results.sort((a, b) => Number(promoted.has(String(b.id))) - Number(promoted.has(String(a.id))));
+    }
+
     const finalResult = {
         success: true,
         data: {
@@ -193,7 +201,11 @@ export const searchUnified = async (query = {}, options = {}) => {
             // restaurant endpoint.
             restaurants: results.slice(skip, skip + limitNumber).map((r) => {
                 const restaurant = toRestaurant(r);
-                return { ...restaurant, profileImage: r.profileImage ? { url: r.profileImage } : null };
+                return {
+                    ...restaurant,
+                    profileImage: r.profileImage ? { url: r.profileImage } : null,
+                    isPromoted: promoted.has(String(r.id)),
+                };
             }),
             total: results.length,
             page: pageNumber,

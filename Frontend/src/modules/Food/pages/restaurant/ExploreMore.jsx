@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import {
+  Megaphone,
   ArrowLeft,
   Search,
   User,
@@ -670,6 +671,10 @@ export default function ExploreMore() {
     { id: "coupons-nav", label: "Offers & Coupons", icon: FileCheck, route: "/food/restaurant/coupon" },
   ]
 
+  const growthItems = [
+    { id: "ads-nav", label: "Advertisements", icon: Megaphone, route: "/food/restaurant/advertisements" },
+  ]
+
   const settingsItems = [
     { id: 3, label: "Delivery settings", icon: Truck, route: "/food/restaurant/delivery-settings" },
     { id: 4, label: "Zone Setup", icon: MapPin, route: "/food/restaurant/zone-setup" },
@@ -695,6 +700,7 @@ export default function ExploreMore() {
   // All sections with their items
   const allSections = [
     { title: "Manage outlet", items: manageOutletItems, key: "manage-outlet" },
+    { title: "Growth", items: growthItems, key: "growth" },
     { title: "Settings", items: settingsItems, key: "settings" },
     { title: "Orders", items: ordersItems, key: "orders" },
     { title: "Help", items: helpItems, key: "help" },

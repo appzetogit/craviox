@@ -1,4 +1,10 @@
 import express from 'express';
+import {
+    approveAdController,
+    listAdsAdminController,
+    rejectAdController,
+    stopAdController,
+} from '../../restaurant/controllers/restaurantAd.controller.js';
 import { AuthError } from '../../../../core/auth/errors.js';
 import * as adminController from '../controllers/admin.controller.js';
 import * as foodApprovalController from '../controllers/foodApproval.controller.js';
@@ -78,7 +84,7 @@ const resolveSectionFromRequest = (path = '', method = '') => {
         path.startsWith('/zones')
     ) return 'restaurant_management';
     if (path.startsWith('/categories') || path.startsWith('/addons') || path.startsWith('/foods')) return 'food_management';
-    if (path.startsWith('/offers') || path.startsWith('/memberships')) return 'promotions_management';
+    if (path.startsWith('/offers') || path.startsWith('/memberships') || path.startsWith('/ads')) return 'promotions_management';
     if (path.startsWith('/orders') || path.startsWith('/order-detect-delivery')) return 'order_management';
     if (path.startsWith('/delivery')) return 'delivery_management';
     if (path.startsWith('/withdrawals')) return 'transaction_management';
@@ -130,6 +136,7 @@ router.use('/categories', requireAdminPermission('food_management', 'view'));
 router.use('/addons', requireAdminPermission('food_management', 'view'));
 router.use('/foods', requireAdminPermission('food_management', 'view'));
 router.use('/offers', requireAdminPermission('promotions_management', 'view'));
+router.use('/ads', requireAdminPermission('promotions_management', 'view'));
 router.use('/delivery', requireAdminPermission('delivery_management', 'view'));
 router.use('/withdrawals', requireAdminPermission('transaction_management', 'view'));
 router.use('/reports', requireAdminPermission('report_management', 'view'));
@@ -202,6 +209,11 @@ router.get('/reports/tax', adminController.getTaxReport);
 router.get('/reports/tax/:id', adminController.getTaxReportDetail);
 router.get('/restaurants/billing/default-commission', adminController.getDefaultCommission);
 router.put('/restaurants/billing/default-commission', adminController.updateDefaultCommission);
+// Restaurant ads (Promotions → Restaurant Ads)
+router.get('/ads', listAdsAdminController);
+router.patch('/ads/:id/approve', approveAdController);
+router.patch('/ads/:id/reject', rejectAdController);
+router.patch('/ads/:id/stop', stopAdController);
 router.get('/restaurants/pending', adminController.getPendingRestaurants);
 router.get('/restaurants/unregistered', adminController.getUnregisteredRestaurants);
 router.delete('/restaurants/unregistered/:id', adminController.deleteUnregisteredRestaurant);

@@ -18,6 +18,7 @@ import {
 } from '../../shared/geo.utils.js';
 import { getRestaurantSubscriptionSettings } from '../../admin/services/admin.service.js';
 import { GST_RATE } from './subscriptionPlan.service.js';
+import { getPromotedRestaurants } from './restaurantAd.service.js';
 import {
     createRazorpayOrder,
     getRazorpayKeyId,
@@ -1765,7 +1766,11 @@ export const listApprovedRestaurants = async (query = {}) => {
     // coordinates yet is not silently dropped from the default listing.
     const wantsGeo = radiusKm !== null || sortBy === 'nearest';
 
+    // Restaurants with a live ad lead the list, marked isPromoted.
+    const promoted = (await getPromotedRestaurants()).ids;
+
     const finish = async (rows, total) => {
+        rows = rows.map((r) => ({ ...r, isPromoted: promoted.has(String(r.id)) }));
         const withRecommended = await attachRecommendedItems(rows);
         const withOffers = await attachPublicOffersToRestaurants(withRecommended);
         const withTimings = await attachOutletTimingsToRestaurants(withOffers);
@@ -1812,9 +1817,10 @@ export const listApprovedRestaurants = async (query = {}) => {
                     (b.estimatedDeliveryTimeMinutes ?? Infinity) || byDistance(a, b),
         };
 
+        const chosen = sorters[sortBy] || byDistance;
         const sorted = rows
             .map((r) => ({ ...toPublicCard(r), distanceInKm: distanceById.get(r.id) ?? null }))
-            .sort(sorters[sortBy] || byDistance);
+            .sort((a, b) => Number(promoted.has(b.id)) - Number(promoted.has(a.id)) || chosen(a, b));
 
         return finish(sorted.slice(skip, skip + limit), sorted.length);
     }
@@ -1830,18 +1836,35 @@ export const listApprovedRestaurants = async (query = {}) => {
             deliveryTime: [{ estimatedDeliveryTimeMinutes: 'asc' }, { createdAt: 'desc' }],
         }[sortBy] || [{ createdAt: 'desc' }];
 
-    const [rows, total] = await Promise.all([
-        prisma.foodRestaurant.findMany({
-            where,
+    // Promoted restaurants that pass the filters come first, then the rest in
+    // the chosen order. The page window spans both parts, so every page and
+    // the total stay consistent.
+    const promotedRows = promoted.size
+        ? await prisma.foodRestaurant.findMany({
+            where: { AND: [where, { id: { in: [...promoted] } }] },
             select: PUBLIC_CARD_SELECT,
             orderBy,
-            skip,
-            take: limit,
-        }),
+        })
+        : [];
+    const promotedPart = promotedRows.slice(skip, skip + limit);
+    const restWhere = promotedRows.length
+        ? { AND: [where, { id: { notIn: promotedRows.map((r) => r.id) } }] }
+        : where;
+
+    const [rows, total] = await Promise.all([
+        limit - promotedPart.length > 0
+            ? prisma.foodRestaurant.findMany({
+                where: restWhere,
+                select: PUBLIC_CARD_SELECT,
+                orderBy,
+                skip: Math.max(0, skip - promotedRows.length),
+                take: limit - promotedPart.length,
+            })
+            : [],
         prisma.foodRestaurant.count({ where }),
     ]);
 
-    return finish(rows.map(toPublicCard), total);
+    return finish([...promotedPart, ...rows].map(toPublicCard), total);
 };
 
 export const getApprovedRestaurantByIdOrSlug = async (idOrSlug) => {

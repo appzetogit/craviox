@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { sumPostpaidAdCharges } from './restaurantAd.service.js';
 import { prisma } from '../../../../config/prisma.js';
 import { isId } from '../../../../utils/helpers.js';
 import { FEATURE_KEYS, isFeatureEnabled } from '../../admin/services/featureSettings.service.js';
@@ -161,7 +162,7 @@ export async function getWalletSummaries(restaurantIds = [], { db = prisma } = {
     const subscriptionEnabled = await isFeatureEnabled(FEATURE_KEYS.RESTAURANT_SUBSCRIPTION, true);
     const scoped = { restaurantId: { in: ids } };
 
-    const [earned, withdrawn, deducted, locked] = await Promise.all([
+    const [earned, withdrawn, deducted, locked, adCharges] = await Promise.all([
         earnedTotalsByRestaurant(ids, { db }),
         // A pending request is money already spoken for, so it is subtracted
         // before it is approved — otherwise it could be withdrawn twice.
@@ -182,6 +183,8 @@ export async function getWalletSummaries(restaurantIds = [], { db = prisma } = {
                 'outstandingAmount',
             )
             : new Map(),
+        // Postpaid advertisements come off the payout balance once approved.
+        sumPostpaidAdCharges(ids, { db }),
     ]);
 
     return new Map(ids.map((id) => {
@@ -190,12 +193,14 @@ export async function getWalletSummaries(restaurantIds = [], { db = prisma } = {
         const lockedAmount = Math.max(0, num(locked.get(id)));
 
         // The full balance stays visible; only withdrawal is limited by the lock.
-        const walletBalance = Math.max(0, totals.payout - totalWithdrawn - num(deducted.get(id)));
+        const adCharge = num(adCharges.get(id));
+        const walletBalance = Math.max(0, totals.payout - totalWithdrawn - num(deducted.get(id)) - adCharge);
 
         return [id, {
             totals,
             totalEarnings: totals.payout,
             totalWithdrawn,
+            adCharges: adCharge,
             walletBalance,
             netAvailable: Math.max(0, walletBalance - lockedAmount),
             lockedAmount,
@@ -335,6 +340,7 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
     const wallet = {
         totalEarnings: summary.totalEarnings,
         totalWithdrawn: summary.totalWithdrawn,
+        adCharges: summary.adCharges, // postpaid advertisements, already taken off the balance
         estimatedPayout: summary.totalEarnings,
         withdrawableBalance: summary.walletBalance,
         netAvailable: summary.netAvailable, // what can ACTUALLY be withdrawn

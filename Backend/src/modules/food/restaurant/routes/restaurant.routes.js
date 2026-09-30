@@ -1,4 +1,14 @@
 import express from 'express';
+import {
+    cancelAdController,
+    createAdController,
+    getAdConfigController,
+    listMyAdsController,
+    quoteAdController,
+    retryAdPaymentController,
+    verifyAdPaymentController,
+} from '../controllers/restaurantAd.controller.js';
+import { countAdMenuVisit } from '../services/restaurantAd.service.js';
 import { upload } from '../../../../middleware/upload.js';
 import { imageUpload, uploadRateLimiter } from '../../../uploads/middleware/upload.middleware.js';
 import {
@@ -128,7 +138,8 @@ router.post(
 
 // Public: approved restaurants list (for user app)
 router.get('/restaurants', cacheResponse(300, 'restaurants'), listApprovedRestaurantsController);
-router.get('/restaurants/:id', cacheResponse(600, 'restaurant_detail'), getApprovedRestaurantController);
+// countAdMenuVisit runs before the cache so a cached page view still counts for a live ad.
+router.get('/restaurants/:id', countAdMenuVisit, cacheResponse(600, 'restaurant_detail'), getApprovedRestaurantController);
 router.get('/restaurants/:id/menu', cacheResponse(600, 'restaurant_menu'), getPublicRestaurantMenuController);
 router.get('/public/foods', cacheResponse(300, 'public_foods'), listPublicFoodsController);
 router.get('/restaurants/:id/outlet-timings', cacheResponse(600, 'restaurant_timings'), getOutletTimingsByRestaurantIdController);
@@ -138,6 +149,15 @@ router.get('/categories/public', cacheResponse(600, 'categories'), listCategorie
 
 // Restaurant dashboard/profile (Bearer token + RESTAURANT role)
 router.get('/current', authMiddleware, requireRestaurant, getCurrentRestaurantController);
+
+// Advertisements (Growth → Advertisements)
+router.get('/ads/config', authMiddleware, requireRestaurant, getAdConfigController);
+router.post('/ads/quote', authMiddleware, requireRestaurant, quoteAdController);
+router.get('/ads', authMiddleware, requireRestaurant, listMyAdsController);
+router.post('/ads', authMiddleware, requireRestaurant, createAdController);
+router.post('/ads/:id/pay', authMiddleware, requireRestaurant, retryAdPaymentController);
+router.post('/ads/:id/verify-payment', authMiddleware, requireRestaurant, verifyAdPaymentController);
+router.post('/ads/:id/cancel', authMiddleware, requireRestaurant, cancelAdController);
 router.patch('/profile', authMiddleware, requireRestaurant, async (req, res, next) => {
     // Invalidate caches when profile is updated
     await invalidateCache('restaurants:*');

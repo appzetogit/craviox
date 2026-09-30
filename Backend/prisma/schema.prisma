@@ -806,6 +806,7 @@ model FoodRestaurant {
   supportTickets       FoodRestaurantSupportTicket[]
   withdrawals          FoodRestaurantWithdrawal[]
   subscriptionInvoices FoodSubscriptionInvoice[]
+  ads                  FoodRestaurantAd[]
   subscriptionTxns     FoodSubscriptionTransaction[]
   subscriptionHistory  FoodRestaurantSubscriptionHistory[]
   diningProfile        FoodDiningRestaurant?
@@ -3438,4 +3439,80 @@ model FoodUserMembership {
   @@index([planId])
   @@index([expiresAt])
   @@map("food_user_memberships")
+}
+
+// ── Restaurant advertisements ──────────────────────────────────────────────
+// A restaurant pays (daily budget × days) to be listed first, marked
+// "Promoted", in the customer restaurant list and search. Every ad waits for
+// admin approval. scheduled / live / completed are not stored: they follow from
+// status 'approved' and the dates.
+
+enum AdStatus {
+  awaiting_payment
+  pending_approval
+  approved
+  rejected
+  cancelled
+  stopped
+}
+
+enum AdPaymentMode {
+  prepaid
+  postpaid
+}
+
+enum AdPaymentStatus {
+  unpaid
+  paid
+  postpaid
+  refunded
+  partially_refunded
+}
+
+model FoodRestaurantAd {
+  id           String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+  restaurantId String @db.VarChar(24)
+
+  /// Start of the first day and end of the last day, Asia/Kolkata.
+  startDate DateTime
+  endDate   DateTime
+  days      Int
+
+  dailyBudget Decimal @db.Decimal(14, 2)
+  totalAmount Decimal @db.Decimal(14, 2)
+  /// What the restaurant is actually charged: totalAmount once approved, the
+  /// days that ran if stopped early, 0 if rejected or cancelled. Postpaid
+  /// charges come off the restaurant's payout balance.
+  chargedAmount Decimal @default(0) @db.Decimal(14, 2)
+
+  paymentMode       AdPaymentMode
+  paymentStatus     AdPaymentStatus @default(unpaid)
+  razorpayOrderId   String?
+  razorpayPaymentId String?         @unique
+  refundedAmount    Decimal         @default(0) @db.Decimal(14, 2)
+  refundId          String?
+
+  status          AdStatus @default(awaiting_payment)
+  rejectionReason String   @default("")
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  stoppedAt       DateTime?
+  cancelledAt     DateTime?
+
+  /// Shown to the restaurant when it bought the ad; guides, not promises.
+  estimatedVisits Int @default(0)
+  estimatedReach  Int @default(0)
+  estimatedOrders Int @default(0)
+
+  /// Customer opens of the restaurant page while the ad was live.
+  menuVisits Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant FoodRestaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([status, startDate, endDate])
+  @@index([restaurantId, createdAt])
+  @@map("food_restaurant_ads")
 }
