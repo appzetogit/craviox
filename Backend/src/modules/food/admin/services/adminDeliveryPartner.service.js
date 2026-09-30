@@ -157,6 +157,9 @@ const serializePartner = (doc, stats = {}, sl = 0) => {
         // phone number they used (the live column holds a placeholder).
         isDeleted: Boolean(doc.deletedAt),
         deletedAt: doc.deletedAt || null,
+        // One label for the admin's account filter: active, pending, rejected,
+        // deactivated (by an admin) or deleted (by the rider).
+        accountStatus: doc.deletedAt ? 'deleted' : doc.status === 'approved' ? 'active' : doc.status,
         ...(doc.deletedAt ? { phone: doc.deletedPhone || '' } : {}),
         profilePhoto: doc.profilePhoto || null,
         profileImage: doc.profilePhoto ? { url: doc.profilePhoto } : null,
@@ -190,12 +193,18 @@ export async function getDeliveryPartners(query = {}) {
     // `includeDeleted=true` (the Delivery Partners screen) also lists riders who
     // deleted their account. Everything else — tracking, bonuses, broadcasts —
     // keeps to active riders.
+    //
+    // `accountStatus=all` lists every account whatever its state, for the
+    // screen's account filter.
     const includeDeleted = String(query.includeDeleted) === 'true';
+    const everyAccount = String(query.accountStatus) === 'all';
     const where = {
         AND: [
-            includeDeleted
-                ? { OR: [{ status: 'approved' }, { deletedAt: { not: null } }] }
-                : { status: 'approved' },
+            everyAccount
+                ? {}
+                : includeDeleted
+                    ? { OR: [{ status: 'approved' }, { deletedAt: { not: null } }] }
+                    : { status: 'approved' },
             searchWhere(query.search),
         ],
     };

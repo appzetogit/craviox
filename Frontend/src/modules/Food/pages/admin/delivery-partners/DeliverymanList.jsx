@@ -15,8 +15,25 @@ const formatCurrency = (amount) => {
   return `\u20B9${numericAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+const ACCOUNT_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "pending", label: "Pending" },
+  { key: "rejected", label: "Rejected" },
+  { key: "deactivated", label: "Deactivated" },
+  { key: "deleted", label: "Deleted by rider" },
+]
+
+const ACCOUNT_TAGS = {
+  pending: { label: "Pending approval", className: "bg-amber-100 text-amber-700" },
+  rejected: { label: "Rejected", className: "bg-slate-200 text-slate-700" },
+  deactivated: { label: "Deactivated", className: "bg-orange-100 text-orange-700" },
+  deleted: { label: "Deleted account", className: "bg-red-100 text-red-700" },
+}
+
 export default function DeliverymanList() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [accountFilter, setAccountFilter] = useState("all")
   const [deliverymen, setDeliverymen] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -76,7 +93,7 @@ export default function DeliverymanList() {
       const params = {
         page: 1,
         limit: 1000, // Get all for now
-        includeDeleted: true,
+        accountStatus: "all",
       }
 
       // Add search to params if provided
@@ -157,10 +174,24 @@ availableCashLimit: wallet?.availableCashLimit || 0,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery])
 
-  const filteredDeliverymen = useMemo(() => {
-    // Backend already handles search, but we can do client-side filtering if needed
-    return deliverymen
+  // Search runs on the server; the account filter is applied here so each
+  // tab can show its count.
+  const accountCounts = useMemo(() => {
+    const counts = { all: deliverymen.length }
+    for (const dm of deliverymen) {
+      const key = dm.accountStatus || "active"
+      counts[key] = (counts[key] || 0) + 1
+    }
+    return counts
   }, [deliverymen])
+
+  const filteredDeliverymen = useMemo(
+    () =>
+      accountFilter === "all"
+        ? deliverymen
+        : deliverymen.filter((dm) => (dm.accountStatus || "active") === accountFilter),
+    [deliverymen, accountFilter],
+  )
 
   const handleView = async (deliveryman) => {
     try {
@@ -516,6 +547,31 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
             </div>
           </div>
 
+          <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Account status">
+            {ACCOUNT_FILTERS.map((f) => {
+              const selected = accountFilter === f.key
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setAccountFilter(f.key)}
+                  className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                    selected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {f.label}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${selected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}
+                  >
+                    {accountCounts[f.key] || 0}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
           <div className="mb-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-slate-700">Deliveryman</span>
@@ -677,12 +733,16 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                                     {dm.name}
                                   </span>
                                 )}
-                                {dm.isDeleted && (
+                                {ACCOUNT_TAGS[dm.accountStatus] && (
                                   <span
-                                    title={dm.deletedAt ? `Deleted by the rider on ${new Date(dm.deletedAt).toLocaleString("en-IN")}` : "Deleted by the rider"}
-                                    className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700"
+                                    title={
+                                      dm.isDeleted && dm.deletedAt
+                                        ? `Deleted by the rider on ${new Date(dm.deletedAt).toLocaleString("en-IN")}`
+                                        : ACCOUNT_TAGS[dm.accountStatus].label
+                                    }
+                                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${ACCOUNT_TAGS[dm.accountStatus].className}`}
                                   >
-                                    Deleted account
+                                    {ACCOUNT_TAGS[dm.accountStatus].label}
                                   </span>
                                 )}
                                 {dm.rating > 0 && editingDeliveryId !== String(dm._id) && (
@@ -800,7 +860,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                         {visibleColumns.actions && (
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
-                              {dm.isDeleted ? null : editingDeliveryId === String(dm._id) ? (
+                              {(dm.accountStatus || "active") !== "active" ? null : editingDeliveryId === String(dm._id) ? (
                                 <>
                                   <button
                                     onClick={() => saveWalletChanges(dm)}
@@ -835,7 +895,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {!dm.isDeleted && (
+                              {(dm.accountStatus || "active") === "active" && (
                               <button
                                 onClick={() => handleDelete(dm)}
                                 disabled={deletingDeliveryId === String(dm._id)}
