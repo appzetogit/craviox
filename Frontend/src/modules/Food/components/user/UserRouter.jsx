@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"
 import UserLayout from "./UserLayout"
 import { Suspense, lazy } from "react"
 import Loader from "@food/components/Loader"
@@ -7,14 +7,14 @@ import ProtectedRoute from "@food/components/ProtectedRoute"
 // Lazy Loading Pages
 
 // Home & Discovery
-const Home = lazy(() => import("@food/pages/user/Home"))
+const HomeScreen = lazy(() => import("@food/userApp/home/HomeScreen"))
+const HomeFilterScreen = lazy(() => import("@food/userApp/home/HomeFilterScreen"))
 const Dining = lazy(() => import("@food/pages/user/Dining"))
 const DiningRestaurants = lazy(() => import("@food/pages/user/DiningRestaurants"))
 const DiningCategory = lazy(() => import("@food/pages/user/DiningCategory"))
 const DiningExplore50 = lazy(() => import("@food/pages/user/DiningExplore50"))
 const DiningExploreNear = lazy(() => import("@food/pages/user/DiningExploreNear"))
 const Coffee = lazy(() => import("@food/pages/user/Coffee"))
-const Under250 = lazy(() => import("@food/pages/user/Under250"))
 const Categories = lazy(() => import("@food/pages/user/Categories"))
 const CategoryPage = lazy(() => import("@food/pages/user/CategoryPage"))
 const Restaurants = lazy(() => import("@food/pages/user/restaurants/Restaurants"))
@@ -41,13 +41,8 @@ const UserOrderDetails = lazy(() => import("@food/pages/user/orders/UserOrderDet
 // Offers
 const Offers = lazy(() => import("@food/pages/user/Offers"))
 
-// Gourmet
-const Gourmet = lazy(() => import("@food/pages/user/Gourmet"))
 
 
-// Collections
-const Collections = lazy(() => import("@food/pages/user/Collections"))
-const CollectionDetail = lazy(() => import("@food/pages/user/CollectionDetail"))
 
 
 
@@ -91,13 +86,21 @@ const Membership = lazy(() => import("@food/pages/user/Membership"))
 // Complaints
 const SubmitComplaint = lazy(() => import("@food/pages/user/complaints/SubmitComplaint"))
 
+/** Home lives at /home; the old /food/user address forwards there. */
+function HomeRoute() {
+  const { pathname, search } = useLocation()
+  if (pathname.startsWith("/food")) return <Navigate to={`/home${search}`} replace />
+  return <HomeScreen />
+}
+
 export default function UserRouter() {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route element={<UserLayout />}>
           {/* Home & Discovery */}
-          <Route path="" element={<Home />} />
+          <Route path="" element={<HomeRoute />} />
+          <Route path="home-filter" element={<HomeFilterScreen />} />
           <Route path="dining" element={<Dining />} />
           <Route path="dining/restaurants" element={<DiningRestaurants />} />
           <Route path="dining/:category" element={<DiningCategory />} />
@@ -116,7 +119,10 @@ export default function UserRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="under-250" element={<Under250 />} />
+          {/* Removed sections: old links land on Home. */}
+          <Route path="under-250" element={<Navigate to="/home" replace />} />
+          <Route path="gourmet" element={<Navigate to="/home" replace />} />
+          <Route path="collections/*" element={<Navigate to="/home" replace />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/:category" element={<CategoryPage />} />
           <Route path="restaurants" element={<Restaurants />} />
@@ -166,13 +172,8 @@ export default function UserRouter() {
           {/* Offers */}
           <Route path="offers" element={<Offers />} />
 
-          {/* Gourmet */}
-          <Route path="gourmet" element={<Gourmet />} />
 
 
-          {/* Collections */}
-          <Route path="collections" element={<Collections />} />
-          <Route path="collections/:id" element={<CollectionDetail />} />
 
 
 

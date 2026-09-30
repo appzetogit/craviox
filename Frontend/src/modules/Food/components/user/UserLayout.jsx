@@ -2,7 +2,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState, createContext, useContext, useRef, useCallback } from "react"
 import { ProfileProvider } from "@food/context/ProfileContext"
 import { DeliveryLocationProvider } from "@food/context/DeliveryLocationContext"
-import LocationPrompt from "./LocationPrompt"
 import { CartProvider } from "@food/context/CartContext"
 import AutoCouponController from "@food/components/user/AutoCouponController"
 import { OrdersProvider } from "@food/context/OrdersContext"
@@ -13,6 +12,10 @@ const debugError = (...args) => {}
 import SearchOverlay from "./SearchOverlay"
 import BottomNavigation from "./BottomNavigation"
 import DesktopNavbar from "./DesktopNavbar"
+import BottomNav from "@food/userApp/shell/BottomNav"
+import { tabForPath } from "@food/userApp/shell/tabs"
+import useActiveOrderTracking from "@food/hooks/useActiveOrderTracking"
+import { isModuleAuthenticated } from "@food/utils/auth"
 import { useUserNotifications } from "../../hooks/useUserNotifications"
 import { shouldSkipScrollResetForHome } from "@food/utils/homeScrollRestore"
 
@@ -182,27 +185,13 @@ export default function UserLayout() {
   // Note: Authentication checks and redirects are handled by ProtectedRoute components
   // UserLayout should not interfere with authentication redirects
 
-  // Show bottom navigation only on home page, dining page, under-250 page, and profile page
-  const path = location.pathname.startsWith("/food")
-    ? location.pathname.substring(5) || "/"
-    : location.pathname
-  const normalizedPath =
-    path.length > 1 ? path.replace(/\/+$/, "") : path
-
-  const isProfileRoot =
-    normalizedPath === "/profile" ||
-    normalizedPath === "/user/profile"
-
-  const showBottomNav = normalizedPath === "/" ||
-    normalizedPath === "/user" ||
-    normalizedPath === "/dining" ||
-    normalizedPath === "/user/dining" ||
-    normalizedPath === "/under-250" ||
-    normalizedPath === "/user/under-250" ||
-    isProfileRoot ||
-    normalizedPath === "" // Handle empty string case for root relative to /food
-
-  const isUnder250 = normalizedPath === "/under-250" || normalizedPath === "/user/under-250"
+  // The app-style tab bar shows on the tab pages. Home draws its own (inside
+  // AppShell); Search, Orders, Offers and Account get it here until they are
+  // rebuilt. Dining keeps the old navigation.
+  const tab = tabForPath(location.pathname)
+  const showAppTabBar = tab !== null && tab !== "home"
+  const normalizedPath = location.pathname.replace(/\/+$/, "")
+  const isDining = normalizedPath === "/food/user/dining"
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors duration-200">
@@ -216,13 +205,13 @@ export default function UserLayout() {
                 {/* <Navbar /> */}
                 {/* Desktop Navbar - Hidden on mobile, visible on medium+ screens */}
                 <div className="hidden md:block">
-                  {showBottomNav && <DesktopNavbar showLogo={!isUnder250} />}
+                  {isDining && <DesktopNavbar showLogo />}
                 </div>
-                {/* <LocationPrompt /> */}
-                <main className={showBottomNav ? "md:pt-40" : ""}>
+                <main className={isDining ? "md:pt-40" : showAppTabBar ? "pb-[calc(84px+env(safe-area-inset-bottom,0px))]" : ""}>
                   <Outlet />
                 </main>
-                {showBottomNav && <BottomNavigation />}
+                {isDining && <BottomNavigation />}
+                {showAppTabBar && <AppTabBar active={tab} />}
               </LocationSelectorProvider>
             </SearchOverlayProvider>
           </OrdersProvider>
@@ -231,4 +220,14 @@ export default function UserLayout() {
       </CartProvider>
     </div>
   )
+}
+
+/** The app's tab bar for pages not yet inside AppShell. */
+function AppTabBar({ active }) {
+  return isModuleAuthenticated("user") ? <OrderAwareTabBar active={active} /> : <BottomNav active={active} />
+}
+
+function OrderAwareTabBar({ active }) {
+  const { activeOrder } = useActiveOrderTracking()
+  return <BottomNav active={active} hasActiveOrder={!!activeOrder} />
 }

@@ -14,6 +14,7 @@ export function isUserHomePath(pathname) {
   if (!pathname || typeof pathname !== "string") return false;
   const normalized = pathname.replace(/\/+$/, "") || "/";
   return (
+    normalized === "/home" ||
     normalized === "/food/user" ||
     normalized === "/user" ||
     normalized === "/food"

@@ -351,9 +351,21 @@ export default function Cart() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [showBillDetails, setShowBillDetails] = useState(true)
   const [showPlacingOrder, setShowPlacingOrder] = useState(false)
-  const [isScheduled, setIsScheduled] = useState(false)
-  const [scheduledDate, setScheduledDate] = useState("")
-  const [scheduledTime, setScheduledTime] = useState("")
+  // A slot picked with the Schedule chip on Home arrives pre-filled.
+  const [homeSlot] = useState(() => {
+    try {
+      const iso = sessionStorage.getItem("craviox_scheduled_at")
+      const d = iso ? new Date(iso) : null
+      if (!d || Number.isNaN(d.getTime()) || d.getTime() < Date.now()) return null
+      const pad = (n) => String(n).padStart(2, "0")
+      return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time: `${pad(d.getHours())}:${pad(d.getMinutes())}` }
+    } catch {
+      return null
+    }
+  })
+  const [isScheduled, setIsScheduled] = useState(Boolean(homeSlot))
+  const [scheduledDate, setScheduledDate] = useState(homeSlot?.date || "")
+  const [scheduledTime, setScheduledTime] = useState(homeSlot?.time || "")
   const [orderProgress, setOrderProgress] = useState(0)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [placedOrderId, setPlacedOrderId] = useState(null)
@@ -2264,6 +2276,7 @@ export default function Cart() {
         setShowOrderSuccess(true)
         window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
         clearCart()
+        try { sessionStorage.removeItem("craviox_scheduled_at") } catch {}
         resetCartPreferences()
         setIsPlacingOrder(false)
         // Refresh wallet balance
@@ -2288,6 +2301,7 @@ export default function Cart() {
         setShowOrderSuccess(true)
         window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
         clearCart()
+        try { sessionStorage.removeItem("craviox_scheduled_at") } catch {}
         resetCartPreferences()
         setIsPlacingOrder(false)
         return
@@ -2372,6 +2386,7 @@ export default function Cart() {
               setShowOrderSuccess(true)
               window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
               clearCart()
+              try { sessionStorage.removeItem("craviox_scheduled_at") } catch {}
               resetCartPreferences()
               setIsPlacingOrder(false)
             } else {

@@ -104,6 +104,18 @@ export default function App() {
       <RestaurantGlobalNotificationListener />
       <PushSoundEnableButton />
       <Suspense fallback={<Loader />}>
+        {location.pathname.startsWith("/home") ? (
+          // /home is the customer Home: the user router at its index. Nothing
+          // lives below it, so anything deeper goes back to /home.
+          <Routes>
+            <Route
+              path="*"
+              element={
+                location.pathname.replace(/\/+$/, "") === "/home" ? <UserRouter /> : <Navigate to="/home" replace />
+              }
+            />
+          </Routes>
+        ) : (
         <Routes>
           {/* User Module - Explicitly mapped to /user */}
           <Route
@@ -126,9 +138,10 @@ export default function App() {
           />
 
           {/* Legacy Redirects & Fallbacks - use absolute path to avoid /user appended in a loop */}
-          <Route path="/" element={<Navigate to="/food/user" replace />} />
-          <Route path="*" element={<Navigate to="/food/user" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
+        )}
       </Suspense>
     </PublicAppConfigProvider>
   )
