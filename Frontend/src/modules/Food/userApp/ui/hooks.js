@@ -45,3 +45,16 @@ export function useRotatingIndex(count, interval, paused = false) {
   }, [count, interval, paused])
   return [count ? index % count : 0, setIndex]
 }
+
+/** True on screens 1024px and wider, where pages use the desktop layout. */
+export function useIsDesktop() {
+  const query = "(min-width: 1024px)"
+  const [desktop, setDesktop] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setDesktop(mq.matches)
+    mq.addEventListener("change", on)
+    return () => mq.removeEventListener("change", on)
+  }, [])
+  return desktop
+}

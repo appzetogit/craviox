@@ -10,6 +10,7 @@ import { isModuleAuthenticated } from "@food/utils/auth"
 import OutOfZoneScreen from "@food/components/user/OutOfZoneScreen"
 import AppShell from "../shell/AppShell"
 import LocationSearch from "../ui/LocationSearch"
+import { useIsDesktop } from "../ui/hooks"
 import DesktopHome from "./DesktopHome"
 import Icon from "../ui/Icon"
 import RestaurantCard from "./RestaurantCard"
@@ -173,18 +174,6 @@ const SectionTitle = ({ children, action }) => (
 /** Home: the Swiggy-style landing on a computer, the app layout on a phone. */
 export default function HomeScreen() {
   return useIsDesktop() ? <DesktopHome /> : <MobileHome />
-}
-
-function useIsDesktop() {
-  const query = "(min-width: 1024px)"
-  const [desktop, setDesktop] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const on = () => setDesktop(mq.matches)
-    mq.addEventListener("change", on)
-    return () => mq.removeEventListener("change", on)
-  }, [])
-  return desktop
 }
 
 /** Home tab on a phone (home_screen.dart). */

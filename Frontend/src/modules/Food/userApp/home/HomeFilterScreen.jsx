@@ -2,6 +2,8 @@ import { useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useProfile } from "@food/context/ProfileContext"
 import AppShell from "../shell/AppShell"
+import { CONTENT, DesktopPage } from "../shell/DesktopChrome"
+import { useIsDesktop } from "../ui/hooks"
 import Icon from "../ui/Icon"
 import RestaurantCard from "./RestaurantCard"
 import { useHomeData } from "../data/useHomeData"
@@ -25,19 +27,22 @@ export default function HomeFilterScreen() {
     [restaurants.list, filter, vegMode, cat],
   )
   const loading = restaurants.loading && !restaurants.list.length
+  const isDesktop = useIsDesktop()
+  const Frame = isDesktop ? DesktopPage : AppShell
 
   const back = () => (window.history.length > 1 ? navigate(-1) : navigate("/home"))
 
   return (
-    <AppShell showCartBar={false}>
+    <Frame showCartBar={false}>
+      <div className={isDesktop ? `${CONTENT} pb-16 pt-6` : ""}>
       <header
-        className="sticky top-0 z-30 flex h-14 items-center px-1"
+        className={isDesktop ? "flex h-14 items-center" : "sticky top-0 z-30 flex h-14 items-center px-1"}
         style={{ background: "var(--ca-bg)", paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <button type="button" aria-label="Back" onClick={back} className="flex h-12 w-12 items-center justify-center">
           <Icon name="arrow_back" size={24} color="var(--ca-title)" />
         </button>
-        <h1 className="flex-1 truncate text-center text-[17px] font-bold" style={{ color: "var(--ca-title)" }}>
+        <h1 className={isDesktop ? "flex-1 truncate text-[28px] font-black" : "flex-1 truncate text-center text-[17px] font-bold"} style={{ color: "var(--ca-title)" }}>
           {title}
         </h1>
         <span className="w-12" />
@@ -70,14 +75,17 @@ export default function HomeFilterScreen() {
         </div>
       ) : (
         <div className="pt-2">
-          <p className="px-5 pb-2 text-[13px] font-semibold text-[#64748B]">
+          <p className={`pb-2 text-[13px] font-semibold text-[#64748B] ${isDesktop ? "" : "px-5"}`}>
             {list.length} {list.length === 1 ? "restaurant" : "restaurants"}
           </p>
-          {list.map((r, i) => (
-            <RestaurantCard key={r.id} restaurant={r} index={i} />
-          ))}
+          <div className={isDesktop ? "-mx-3 grid grid-cols-3" : ""}>
+            {list.map((r, i) => (
+              <RestaurantCard key={r.id} restaurant={r} index={i} />
+            ))}
+          </div>
         </div>
       )}
-    </AppShell>
+      </div>
+    </Frame>
   )
 }

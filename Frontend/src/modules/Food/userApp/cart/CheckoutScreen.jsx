@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AppShell from "../shell/AppShell"
+import { CONTENT, DesktopPage } from "../shell/DesktopChrome"
+import { useIsDesktop } from "../ui/hooks"
 import BottomSheet from "../ui/BottomSheet"
 import Icon from "../ui/Icon"
 import CouponSheet from "./CouponSheet"
@@ -119,6 +121,7 @@ export default function CheckoutScreen() {
   const navigate = useNavigate()
   const checkout = useCheckout()
   const { items, restaurant, address, hasAddress, pricing: p, calculating, pricingError, choices, walletBalance, placing, placeOrder, canPlaceOrder, scheduledAt, clearSchedule, customerName, customerPhone } = checkout
+  const isDesktop = useIsDesktop()
   const [expanded, setExpanded] = useState(false)
   const [showAllPay, setShowAllPay] = useState(false)
   const [couponOpen, setCouponOpen] = useState(false)
@@ -137,9 +140,7 @@ export default function CheckoutScreen() {
   const label = address?.label ? String(address.label).replace(/^\w/, (c) => c.toUpperCase()) : "Home"
   const options = showAllPay ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.key === choices.paymentMethod)
 
-  return (
-    <AppShell>
-      <div className="flex min-h-[100dvh] flex-col" style={{ background: "var(--ca-bg)" }}>
+  const headerEl = (
         <header className="flex items-center gap-3.5 px-4 py-3 pt-[calc(12px+env(safe-area-inset-top,0px))]">
           <BackButton to="/food/user/cart" tinted={false} />
           <div>
@@ -147,9 +148,9 @@ export default function CheckoutScreen() {
             <p className="mt-0.5 text-xs font-medium text-[#64748B]">Review your order and place it</p>
           </div>
         </header>
-
-        <div className="flex-1 space-y-4 px-4 pb-6 pt-3">
-          {/* Delivery address */}
+  )
+  const addressCard = (
+    <>
           <Card
             icon="location_on"
             title="Delivery Address"
@@ -201,6 +202,10 @@ export default function CheckoutScreen() {
             )}
           </Card>
 
+    </>
+  )
+  const closedNotice = (
+    <>
           {!canPlaceOrder && checkout.restaurantRaw && (
             <div className="flex gap-2 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2.5 text-[12.5px] font-semibold text-[#92400E]">
               <Icon name="schedule" size={16} />
@@ -208,7 +213,10 @@ export default function CheckoutScreen() {
             </div>
           )}
 
-          {/* Order summary */}
+    </>
+  )
+  const summaryCard = (
+    <>
           <Card
             icon="shopping_bag"
             title="Order Summary"
@@ -313,7 +321,10 @@ export default function CheckoutScreen() {
             </div>
           </Card>
 
-          {/* Payment */}
+    </>
+  )
+  const paymentCard = (
+    <>
           <Card
             icon="account_balance_wallet"
             title="Payment Methods"
@@ -362,6 +373,9 @@ export default function CheckoutScreen() {
             </div>
           </Card>
 
+    </>
+  )
+  const secureCard = (
           <div className="flex items-center gap-2.5 rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFC] p-3">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(245,74,0,0.12)" }}>
               <Icon name="verified_user" size={18} color="var(--ca-primary)" />
@@ -375,9 +389,9 @@ export default function CheckoutScreen() {
               <span className="mt-0.5 inline-block rounded-[3px] bg-[#E0F2FE] px-1 py-px text-[7.5px] font-black text-[#0284C7]">PCI DSS COMPLIANT</span>
             </span>
           </div>
-        </div>
-
-        <div className="sticky bottom-0 bg-white px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]" style={{ boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}>
+  )
+  const placeBar = (
+    <>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold text-[#64748B]">To Pay</p>
@@ -398,10 +412,54 @@ export default function CheckoutScreen() {
             </button>
           </div>
           {n(p?.discount) > 0 && <p className="mt-1.5 text-[10.5px] font-semibold text-[#64748B]">You will save {rupees(p.discount)} on this order</p>}
-        </div>
-      </div>
+    </>
+  )
+  const sheets = (
+    <>
       <CouponSheet open={couponOpen} onClose={() => setCouponOpen(false)} checkout={checkout} />
       <InstructionsSheet open={instructionsOpen} onClose={() => setInstructionsOpen(false)} choices={choices} />
+    </>
+  )
+
+  if (isDesktop) {
+    return (
+      <DesktopPage>
+        <div className={`${CONTENT} pb-20 pt-8`}>
+          <div className="mb-5 [&_header]:p-0">{headerEl}</div>
+          <div className="grid grid-cols-[1fr_420px] items-start gap-8">
+            <div className="min-w-0 space-y-4">
+              {addressCard}
+              {closedNotice}
+              {paymentCard}
+              {secureCard}
+            </div>
+            <aside className="sticky top-24 space-y-4">
+              {summaryCard}
+              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>{placeBar}</div>
+            </aside>
+          </div>
+        </div>
+        {sheets}
+      </DesktopPage>
+    )
+  }
+
+  return (
+    <AppShell>
+      <div className="flex min-h-[100dvh] flex-col" style={{ background: "var(--ca-bg)" }}>
+        {headerEl}
+        <div className="flex-1 space-y-4 px-4 pb-6 pt-3">
+          {addressCard}
+          {closedNotice}
+          {summaryCard}
+          {paymentCard}
+          {secureCard}
+        </div>
+        <div className="sticky bottom-0 bg-white px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]" style={{ boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}>
+          {placeBar}
+        </div>
+      </div>
+      {sheets}
     </AppShell>
   )
 }

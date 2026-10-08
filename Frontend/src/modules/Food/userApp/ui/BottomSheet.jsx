@@ -22,16 +22,15 @@ export default function BottomSheet({ open, onClose, children, maxHeight = "75vh
   return createPortal(
     <div className="ca-app fixed inset-0 z-[100] flex justify-center" style={{ background: "transparent" }}>
       <div className="ca-fade-in absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative flex w-full max-w-[480px] flex-col justify-end pointer-events-none">
+      {/* A bottom sheet on phones; a centred dialog on desktop. */}
+      <div className="relative flex w-full max-w-[480px] flex-col justify-end pointer-events-none lg:max-w-[520px] lg:justify-center lg:py-10">
         <div
           role="dialog"
           aria-modal="true"
-          className="ca-sheet pointer-events-auto flex flex-col overflow-hidden"
+          className="ca-sheet pointer-events-auto flex flex-col overflow-hidden rounded-t-3xl lg:rounded-3xl lg:shadow-2xl"
           style={{
             maxHeight,
             background: "var(--ca-surface)",
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }}
         >

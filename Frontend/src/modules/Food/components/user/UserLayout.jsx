@@ -13,6 +13,8 @@ import SearchOverlay from "./SearchOverlay"
 import BottomNavigation from "./BottomNavigation"
 import DesktopNavbar from "./DesktopNavbar"
 import BottomNav from "@food/userApp/shell/BottomNav"
+import { TopBar } from "@food/userApp/shell/DesktopChrome"
+import { useIsDesktop } from "@food/userApp/ui/hooks"
 import { tabForPath } from "@food/userApp/shell/tabs"
 import useActiveOrderTracking from "@food/hooks/useActiveOrderTracking"
 import { isModuleAuthenticated } from "@food/utils/auth"
@@ -189,9 +191,14 @@ export default function UserLayout() {
   // AppShell); Search, Orders, Offers and Account get it here until they are
   // rebuilt. Dining keeps the old navigation.
   const tab = tabForPath(location.pathname)
-  const showAppTabBar = tab !== null && tab !== "home"
+  const isDesktop = useIsDesktop()
+  // Rebuilt screens draw their own frame (AppShell / DesktopPage).
+  const ownFrame = /^\/(home|food\/user(\/(home-filter|restaurants\/[^/]+|cart|checkout))?)\/?$/.test(location.pathname)
+  const showAppTabBar = !isDesktop && tab !== null && tab !== "home"
+  // On a computer, pages not yet rebuilt get the desktop top bar instead.
   const normalizedPath = location.pathname.replace(/\/+$/, "")
   const isDining = normalizedPath === "/food/user/dining"
+  const showTopBar = isDesktop && !ownFrame && !isDining
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors duration-200">
@@ -207,6 +214,12 @@ export default function UserLayout() {
                 <div className="hidden md:block">
                   {isDining && <DesktopNavbar showLogo />}
                 </div>
+                {showTopBar && (
+                  // display:contents keeps the bar sticky to the page while the theme variables still apply.
+                  <div className="ca-app contents">
+                    <TopBar />
+                  </div>
+                )}
                 <main className={isDining ? "md:pt-40" : showAppTabBar ? "pb-[calc(84px+env(safe-area-inset-bottom,0px))]" : ""}>
                   <Outlet />
                 </main>

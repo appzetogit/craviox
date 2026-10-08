@@ -5,6 +5,8 @@ import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { getUserRestaurantDistance, normalizeRestaurantLocation } from "@food/utils/geo"
 import AppShell from "../shell/AppShell"
+import { CONTENT, DesktopPage } from "../shell/DesktopChrome"
+import { useIsDesktop } from "../ui/hooks"
 import Icon from "../ui/Icon"
 import CouponSheet from "./CouponSheet"
 import { VegMark } from "../restaurant/DishParts"
@@ -229,10 +231,11 @@ function BillRow({ label, value, info, green }) {
   )
 }
 
-/** Cart (cart_screen.dart). */
+/** Cart (cart_screen.dart). Two columns on desktop. */
 export default function CartScreen() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const isDesktop = useIsDesktop()
   const checkout = useCheckout()
   const { items, restaurant, restaurantRaw, restaurantName, pricing, calculating, pricingError, subtotal, address, hasAddress, authed } = checkout
   const [couponOpen, setCouponOpen] = useState(false)
@@ -251,117 +254,166 @@ export default function CartScreen() {
   const proceed = () => (authed ? navigate("/food/user/checkout") : navigate("/food/user/auth/login", { state: { from: "/food/user/checkout" } }))
   const p = pricing
 
+  const header = (
+    <header className={isDesktop ? "flex items-center gap-3 pb-5" : "flex items-center gap-3 px-4 py-2.5 pt-[calc(10px+env(safe-area-inset-top,0px))]"}>
+      <BackButton />
+      <div className="min-w-0">
+        <h1 className={`font-black tracking-[-0.3px] text-[#0F172A] ${isDesktop ? "text-[28px]" : "text-[19px]"}`}>Your Cart</h1>
+        <p className={`mt-px truncate font-medium text-[#64748B] ${isDesktop ? "text-sm" : "text-[11.5px]"}`}>
+          {totalQty} {totalQty === 1 ? "item" : "items"}
+          {restaurantName && (
+            <>
+              {" from "}
+              <span className="font-extrabold" style={{ color: "var(--ca-primary)" }}>{restaurantName}</span>
+            </>
+          )}
+        </p>
+      </div>
+    </header>
+  )
+
+  const empty = (
+    <div className="flex flex-1 flex-col items-center justify-center px-8 py-24 text-center">
+      <span className="flex h-[70px] w-[70px] items-center justify-center rounded-full" style={{ background: "rgba(245,74,0,0.1)" }}>
+        <Icon name="shopping_bag" outlined size={32} color="var(--ca-primary)" />
+      </span>
+      <p className="mt-4 text-[17px] font-extrabold text-[#0F172A]">Your cart is empty</p>
+      <p className="mt-1.5 text-[13px] text-[#64748B]">Add dishes from a restaurant to get started.</p>
+      <button type="button" onClick={() => navigate("/home")} className="mt-5 rounded-xl px-7 py-3 font-extrabold text-white" style={{ background: "var(--ca-primary)" }}>
+        Browse restaurants
+      </button>
+    </div>
+  )
+
+  const itemsBlock = (
+    <>
+      {threshold > 0 && <FreeDeliveryCard threshold={threshold} subtotal={subtotal} />}
+      <div className={isDesktop ? "grid grid-cols-2 gap-3" : "space-y-2.5"}>
+        {items.map((l) => (
+          <CartLine key={l.id} line={l} onOpen={() => navigate(`/food/user/restaurants/${slug}?dish=${l.itemId || String(l.id).split("::")[0]}`)} />
+        ))}
+      </div>
+      <Recommendations restaurantRaw={restaurantRaw} restaurantSlug={slug} cartItemIds={cartItemIds} />
+    </>
+  )
+
+  const deliverTo = (
+    <>
+      <button type="button" onClick={openAddress} className="w-full rounded-[10px] border border-[#E2E8F0] bg-white px-2 py-1.5 text-left">
+        <span className="flex items-start gap-1.5">
+          <Icon name="two_wheeler" size={16} color="var(--ca-primary)" />
+          <span className="min-w-0">
+            <span className="block text-[9px] font-semibold text-[#64748B]">Deliver to</span>
+            <span className="flex items-center text-[11px] font-extrabold text-[#0F172A]">
+              <span className="truncate">{address?.label || (hasAddress ? "Current location" : "Select address")}</span>
+              <Icon name="keyboard_arrow_down" size={14} />
+            </span>
+          </span>
+        </span>
+        {hasAddress && <span className="mt-0.5 line-clamp-3 text-[9.5px] leading-[1.25] text-[#64748B]">{formatFullAddress(address)}</span>}
+      </button>
+      <div className="mt-2.5 flex items-center justify-between text-[9.5px] font-bold text-[#475569]">
+        <span className="flex items-center gap-0.5"><Icon name="schedule" outlined size={13} />{restaurant?.deliveryTime || "—"}</span>
+        <span className="flex items-center gap-0.5"><Icon name="location_on" outlined size={13} />{distance != null ? `${distance.toFixed(1)} km` : "—"}</span>
+      </div>
+    </>
+  )
+
+  const bill = (
+    <div className="min-w-0 flex-1">
+      <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-[10px]" style={{ background: "rgba(245,74,0,0.12)" }}>
+        <Icon name="shopping_bag" outlined size={18} color="var(--ca-primary)" />
+        <span className="absolute -right-[3px] -top-[3px] flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white text-[8.5px] font-bold text-white" style={{ background: "var(--ca-primary)" }}>
+          {totalQty}
+        </span>
+      </span>
+      <div className="mt-2 space-y-[3px]">
+        <BillRow label="Item Total" value={rupees(p?.subtotal ?? subtotal)} />
+        <BillRow label="Delivery Fee" info value={p ? (Number(p.deliveryFee) > 0 ? rupees(Number(p.deliveryFee) + (Number(p.deliveryFeeGst) || 0)) : "FREE") : money(null, calculating)} green={p && !(Number(p.deliveryFee) > 0)} />
+        {Number(p?.packagingFee) > 0 && <BillRow label="Packaging Fee" value={rupees(p.packagingFee)} />}
+        {Number(p?.platformFee) > 0 && <BillRow label="Platform Fee" value={rupees(p.platformFee)} />}
+        {Number(p?.tax) > 0 && <BillRow label="GST & Charges" value={rupees(p.tax)} />}
+        {Number(p?.discount) > 0 && <BillRow label="Discount" value={`-${rupees(p.discount)}`} green />}
+      </div>
+      <div className="my-2 h-px bg-[#CBD5E1]" />
+      <div className="flex items-center justify-between">
+        <span className="text-[12.5px] font-black" style={{ color: "var(--ca-primary)" }}>To Pay</span>
+        <span className="text-[17px] font-black" style={{ color: "var(--ca-primary)" }}>{money(p?.total, calculating)}</span>
+      </div>
+      {!p && !calculating && (pricingError || !hasAddress || !authed) && (
+        <p className="mt-2 flex items-start gap-1 text-[10.5px] font-semibold text-[#7C2D12]">
+          <Icon name="error" outlined size={14} color="#EA580C" />
+          <span className="flex-1">{!authed ? "Sign in to see your bill." : !hasAddress ? "Add a delivery address to see your bill." : pricingError}</span>
+          {authed && hasAddress && (
+            <button type="button" onClick={() => checkout.recalculate()} className="font-black" style={{ color: "var(--ca-primary)" }}>
+              RETRY
+            </button>
+          )}
+        </p>
+      )}
+    </div>
+  )
+
+  const proceedButton = (
+    <button type="button" onClick={proceed} className="flex h-12 w-full items-center justify-center rounded-[14px] text-white" style={{ background: "var(--ca-primary)" }}>
+      <span className="text-[14.5px] font-black">Proceed to Checkout</span>
+      <span className="mx-3 h-4 w-px bg-white/40" />
+      <span className="text-[15.5px] font-black">{money(p?.total, calculating)}</span>
+    </button>
+  )
+
+  const sheet = <CouponSheet open={couponOpen} onClose={() => setCouponOpen(false)} checkout={checkout} />
+
+  if (isDesktop) {
+    return (
+      <DesktopPage>
+        <div className={`${CONTENT} pb-20 pt-8`}>
+          {header}
+          {!items.length ? (
+            empty
+          ) : (
+            <div className="grid grid-cols-[1fr_380px] items-start gap-8">
+              <div className="min-w-0">{itemsBlock}</div>
+              <aside className="sticky top-24">
+                <PromoBox checkout={checkout} onOpen={() => setCouponOpen(true)} />
+                <div className="mt-[18px] rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  {bill}
+                  <div className="mt-4 border-t border-[#E2E8F0] pt-4">{deliverTo}</div>
+                </div>
+                <div className="mt-4">{proceedButton}</div>
+              </aside>
+            </div>
+          )}
+        </div>
+        {sheet}
+      </DesktopPage>
+    )
+  }
+
   return (
     <AppShell>
       <div className="flex min-h-[100dvh] flex-col" style={{ background: "var(--ca-bg)" }}>
-        <header className="flex items-center gap-3 px-4 py-2.5 pt-[calc(10px+env(safe-area-inset-top,0px))]">
-          <BackButton />
-          <div className="min-w-0">
-            <h1 className="text-[19px] font-black tracking-[-0.3px] text-[#0F172A]">Your Cart</h1>
-            <p className="mt-px truncate text-[11.5px] font-medium text-[#64748B]">
-              {totalQty} {totalQty === 1 ? "item" : "items"}
-              {restaurantName && (
-                <>
-                  {" from "}
-                  <span className="font-extrabold" style={{ color: "var(--ca-primary)" }}>{restaurantName}</span>
-                </>
-              )}
-            </p>
-          </div>
-        </header>
-
+        {header}
         {!items.length ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-8 pb-24 text-center">
-            <span className="flex h-[70px] w-[70px] items-center justify-center rounded-full" style={{ background: "rgba(245,74,0,0.1)" }}>
-              <Icon name="shopping_bag" outlined size={32} color="var(--ca-primary)" />
-            </span>
-            <p className="mt-4 text-[17px] font-extrabold text-[#0F172A]">Your cart is empty</p>
-            <p className="mt-1.5 text-[13px] text-[#64748B]">Add dishes from a restaurant to get started.</p>
-            <button type="button" onClick={() => navigate("/home")} className="mt-5 rounded-xl px-7 py-3 font-extrabold text-white" style={{ background: "var(--ca-primary)" }}>
-              Browse restaurants
-            </button>
-          </div>
+          empty
         ) : (
           <>
             <div className="flex-1 px-4 pb-6 pt-2">
-              {threshold > 0 && <FreeDeliveryCard threshold={threshold} subtotal={subtotal} />}
-              <div className="space-y-2.5">
-                {items.map((l) => (
-                  <CartLine key={l.id} line={l} onOpen={() => navigate(`/food/user/restaurants/${slug}?dish=${l.itemId || String(l.id).split("::")[0]}`)} />
-                ))}
-              </div>
-              <Recommendations restaurantRaw={restaurantRaw} restaurantSlug={slug} cartItemIds={cartItemIds} />
+              {itemsBlock}
               <PromoBox checkout={checkout} onOpen={() => setCouponOpen(true)} />
-
               <div className="mt-[18px] flex rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-3.5">
-                <div className="min-w-0 flex-1">
-                  <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-[10px]" style={{ background: "rgba(245,74,0,0.12)" }}>
-                    <Icon name="shopping_bag" outlined size={18} color="var(--ca-primary)" />
-                    <span className="absolute -right-[3px] -top-[3px] flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white text-[8.5px] font-bold text-white" style={{ background: "var(--ca-primary)" }}>
-                      {totalQty}
-                    </span>
-                  </span>
-                  <div className="mt-2 space-y-[3px]">
-                    <BillRow label="Item Total" value={rupees(p?.subtotal ?? subtotal)} />
-                    <BillRow label="Delivery Fee" info value={p ? (Number(p.deliveryFee) > 0 ? rupees(Number(p.deliveryFee) + (Number(p.deliveryFeeGst) || 0)) : "FREE") : money(null, calculating)} green={p && !(Number(p.deliveryFee) > 0)} />
-                    {Number(p?.packagingFee) > 0 && <BillRow label="Packaging Fee" value={rupees(p.packagingFee)} />}
-                    {Number(p?.platformFee) > 0 && <BillRow label="Platform Fee" value={rupees(p.platformFee)} />}
-                    {Number(p?.tax) > 0 && <BillRow label="GST & Charges" value={rupees(p.tax)} />}
-                    {Number(p?.discount) > 0 && <BillRow label="Discount" value={`-${rupees(p.discount)}`} green />}
-                  </div>
-                  <div className="my-2 h-px bg-[#CBD5E1]" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12.5px] font-black" style={{ color: "var(--ca-primary)" }}>To Pay</span>
-                    <span className="text-[17px] font-black" style={{ color: "var(--ca-primary)" }}>{money(p?.total, calculating)}</span>
-                  </div>
-                  {!p && !calculating && (pricingError || !hasAddress || !authed) && (
-                    <p className="mt-2 flex items-start gap-1 text-[10.5px] font-semibold text-[#7C2D12]">
-                      <Icon name="error" outlined size={14} color="#EA580C" />
-                      <span className="flex-1">
-                        {!authed ? "Sign in to see your bill." : !hasAddress ? "Add a delivery address to see your bill." : pricingError}
-                      </span>
-                      {authed && hasAddress && (
-                        <button type="button" onClick={() => checkout.recalculate()} className="font-black" style={{ color: "var(--ca-primary)" }}>
-                          RETRY
-                        </button>
-                      )}
-                    </p>
-                  )}
-                </div>
+                {bill}
                 <div className="mx-2.5 w-px self-stretch bg-[#E2E8F0]" />
-                <div className="w-[125px] shrink-0">
-                  <button type="button" onClick={openAddress} className="w-full rounded-[10px] border border-[#E2E8F0] bg-white px-2 py-1.5 text-left">
-                    <span className="flex items-start gap-1.5">
-                      <Icon name="two_wheeler" size={16} color="var(--ca-primary)" />
-                      <span className="min-w-0">
-                        <span className="block text-[9px] font-semibold text-[#64748B]">Deliver to</span>
-                        <span className="flex items-center text-[11px] font-extrabold text-[#0F172A]">
-                          <span className="truncate">{address?.label || (hasAddress ? "Current location" : "Select address")}</span>
-                          <Icon name="keyboard_arrow_down" size={14} />
-                        </span>
-                      </span>
-                    </span>
-                    {hasAddress && <span className="mt-0.5 line-clamp-3 text-[9.5px] leading-[1.25] text-[#64748B]">{formatFullAddress(address)}</span>}
-                  </button>
-                  <div className="mt-2.5 flex items-center justify-between text-[9.5px] font-bold text-[#475569]">
-                    <span className="flex items-center gap-0.5"><Icon name="schedule" outlined size={13} />{restaurant?.deliveryTime || "—"}</span>
-                    <span className="flex items-center gap-0.5"><Icon name="location_on" outlined size={13} />{distance != null ? `${distance.toFixed(1)} km` : "—"}</span>
-                  </div>
-                </div>
+                <div className="w-[125px] shrink-0">{deliverTo}</div>
               </div>
             </div>
-
             <div className="sticky bottom-0 bg-white px-4 py-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))]" style={{ boxShadow: "0 -3px 10px rgba(0,0,0,0.06)" }}>
-              <button type="button" onClick={proceed} className="flex h-12 w-full items-center justify-center rounded-[14px] text-white" style={{ background: "var(--ca-primary)" }}>
-                <span className="text-[14.5px] font-black">Proceed to Checkout</span>
-                <span className="mx-3 h-4 w-px bg-white/40" />
-                <span className="text-[15.5px] font-black">{money(p?.total, calculating)}</span>
-              </button>
+              {proceedButton}
             </div>
           </>
         )}
       </div>
-      <CouponSheet open={couponOpen} onClose={() => setCouponOpen(false)} checkout={checkout} />
+      {sheet}
     </AppShell>
   )
 }

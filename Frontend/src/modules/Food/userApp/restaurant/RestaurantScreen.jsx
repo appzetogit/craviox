@@ -7,7 +7,9 @@ import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailabil
 import AppShell from "../shell/AppShell"
 import FloatingViewCartBar from "../shell/FloatingViewCartBar"
 import Icon from "../ui/Icon"
-import { useRotatingIndex } from "../ui/hooks"
+import { useIsDesktop, useRotatingIndex } from "../ui/hooks"
+import { DesktopPage } from "../shell/DesktopChrome"
+import DesktopRestaurant from "./DesktopRestaurant"
 import { useFavoriteToggle } from "../home/RestaurantCard"
 import { addonsForDish, useRestaurantPage } from "../data/restaurantPage"
 import { useDishCart } from "../data/useDishCart"
@@ -185,6 +187,8 @@ export default function RestaurantScreen() {
   const [category, setCategory] = useState("All")
   const [openDish, setOpenDish] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const isDesktop = useIsDesktop()
+  const Frame = isDesktop ? DesktopPage : AppShell
 
   const isOpen = raw ? getRestaurantAvailabilityStatus(raw).isOpen : true
   const distanceLabel = useMemo(() => {
@@ -250,20 +254,20 @@ export default function RestaurantScreen() {
 
   if (page.loading && !r) {
     return (
-      <AppShell>
+      <Frame>
         <div className="h-[175px] animate-pulse bg-[#E2E8F0]" />
         <div className="relative -mt-[60px] mx-4 h-40 animate-pulse rounded-[22px] bg-white" />
         <div className="flex justify-center py-12">
           <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-[#E2E8F0] border-t-[var(--ca-primary)]" />
         </div>
-      </AppShell>
+      </Frame>
     )
   }
 
   if (!r) {
     const notFound = page.error?.response?.status === 404
     return (
-      <AppShell>
+      <Frame>
         <div className="flex flex-col items-center px-8 py-24 text-center">
           <Icon name={notFound ? "restaurant" : "wifi_off"} size={48} color="#94A3B8" />
           <p className="mt-4 text-base font-extrabold" style={{ color: "var(--ca-title)" }}>
@@ -281,7 +285,52 @@ export default function RestaurantScreen() {
             </button>
           </div>
         </div>
-      </AppShell>
+      </Frame>
+    )
+  }
+
+  const dishSheet = (
+    <DishSheet
+      dish={openDish}
+      addons={openDish ? addonsForDish(addons, openDish) : []}
+      closed={!isOpen}
+      onClose={() => setOpenDish(null)}
+      onAddToCart={({ dish, variant, quantity, addonQty }) => {
+        if (!addDish(dish, { variant, quantity })) return false
+        for (const a of addons) if (addonQty[a.id] > 0) addAddon(a, addonQty[a.id])
+        return true
+      }}
+    />
+  )
+
+  if (isDesktop) {
+    return (
+      <>
+        <DesktopRestaurant
+          r={r}
+          raw={raw}
+          distanceLabel={distanceLabel}
+          isOpen={isOpen}
+          offers={offers}
+          query={query}
+          setQuery={setQuery}
+          diet={diet}
+          setDiet={setDiet}
+          groups={groups}
+          shown={shown}
+          category={category}
+          setCategory={setCategory}
+          bestsellers={bestsellers}
+          dishes={dishes}
+          qtyByDish={qtyByDish}
+          onOpen={setOpenDish}
+          onAdd={quickAdd}
+          onRemove={removeOne}
+          jumpTo={jumpTo}
+          sectionId={sectionId}
+        />
+        {dishSheet}
+      </>
     )
   }
 
@@ -421,17 +470,7 @@ export default function RestaurantScreen() {
       </div>
       <FloatingViewCartBar bottom={20} aboveNav={false} />
 
-      <DishSheet
-        dish={openDish}
-        addons={openDish ? addonsForDish(addons, openDish) : []}
-        closed={!isOpen}
-        onClose={() => setOpenDish(null)}
-        onAddToCart={({ dish, variant, quantity, addonQty }) => {
-          if (!addDish(dish, { variant, quantity })) return false
-          for (const a of addons) if (addonQty[a.id] > 0) addAddon(a, addonQty[a.id])
-          return true
-        }}
-      />
+      {dishSheet}
       <MenuIndexSheet open={menuOpen} groups={groups} onPick={jumpTo} onClose={() => setMenuOpen(false)} />
     </AppShell>
   )
