@@ -183,7 +183,9 @@ export async function createRestaurantAddon(restaurantId, body = {}, { byAdmin =
 
     const foodIds = await sanitizeFoodIds(rid, body?.foodIds);
 
-    const price = Number(body.price);
+    // No price given is a free add-on (₹0), as before; a bad or negative one
+    // is refused.
+    const price = body.price === undefined || body.price === null || body.price === '' ? 0 : Number(body.price);
     if (!Number.isFinite(price) || price < 0) throw new ValidationError('Price must be a valid positive number');
 
     const draft = {

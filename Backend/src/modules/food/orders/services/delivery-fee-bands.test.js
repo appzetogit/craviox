@@ -65,6 +65,9 @@ test('a band may set both basePay and perKm', async () => {
     });
     assert.equal(Number(created.deliveryBoyBasePay), 15);
     assert.equal(Number(created.deliveryBoyPerKm), 10);
+
+    // The tests below read this row's bands and expect the two from the first test.
+    await prisma.deliveryFeeBand.delete({ where: { id: created.id } });
 });
 
 test('an inverted range is rejected', async () => {

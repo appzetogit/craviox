@@ -97,13 +97,15 @@ test('the range rules that already existed still hold', () => {
         rejects({ deliveryFeeRanges: [{ min: '5', max: '5', fee: '20' }] }) || '',
         /min less than max/,
     );
+    // One range covers the whole area now, so a second one is refused before
+    // the overlap rule is ever reached.
     assert.match(
         rejects({
             deliveryFeeRanges: [
                 { min: '0', max: '5', fee: '20' },
-                { min: '3', max: '8', fee: '30' },
+                { min: '5', max: '8', fee: '30' },
             ],
         }) || '',
-        /must not overlap/,
+        /Only one delivery range is allowed/,
     );
 });
