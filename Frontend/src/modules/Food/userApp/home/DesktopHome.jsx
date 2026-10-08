@@ -99,20 +99,13 @@ function Hero({ onSearch, locationLabel }) {
             Delivering to {locationLabel}
           </p>
         )}
-        <div className="mx-auto mt-10 grid max-w-[860px] grid-cols-2 gap-5 text-left">
+        <div className="mx-auto mt-10 max-w-[860px] text-left">
           <ServiceCard
             to="#restaurants"
             title="Food Delivery"
             subtitle="From restaurants near you"
             note="Live order tracking"
             icon="two_wheeler"
-          />
-          <ServiceCard
-            to="/food/user/dining"
-            title="Dining Out"
-            subtitle="Book a table, skip the wait"
-            note="Offers on dine-in"
-            icon="restaurant"
           />
         </div>
       </div>
@@ -209,7 +202,7 @@ function Footer() {
   const cols = [
     ["Company", [["About Craviox", "/food/user/profile/about"], ["Terms & Conditions", "/terms"], ["Privacy Policy", "/privacy"]]],
     ["Contact us", [["Help & Support", "/food/user/help"], ["Partner with us", "/food/restaurant/welcome"], ["Ride with us", "/food/delivery/welcome"]]],
-    ["For you", [["Offers", "/food/user/offers"], ["Dining out", "/food/user/dining"], ["Your orders", "/food/user/orders"]]],
+    ["For you", [["Offers", "/food/user/offers"], ["Your orders", "/food/user/orders"]]],
   ]
   return (
     <footer className="mt-20 bg-[var(--ca-ink)] text-white">

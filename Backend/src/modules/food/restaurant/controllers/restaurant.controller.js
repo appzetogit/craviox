@@ -61,13 +61,39 @@ export const listApprovedRestaurantsController = async (req, res, next) => {
     }
 };
 
+/**
+ * Fields of a restaurant row that must never reach the public (customer,
+ * unauthenticated) restaurant page: bank and UPI details, tax and KYC
+ * documents, owner contact, push tokens and billing internals.
+ */
+const PRIVATE_RESTAURANT_FIELDS = [
+    'accountHolderName', 'accountNumber', 'accountType', 'ifscCode', 'upiId', 'upiQrImage',
+    'panNumber', 'panImage', 'nameOnPan',
+    'gstNumber', 'gstImage', 'gstAddress', 'gstLegalName', 'gstRegistered',
+    'fssaiImage', 'fssaiExpiry',
+    'ownerName', 'ownerEmail', 'ownerPhone', 'ownerPhoneDigits', 'ownerPhoneLast10',
+    'fcmTokens', 'fcmTokenMobile', 'tokenVersion',
+    'subscriptionAmount', 'subscriptionAutoDeductedAmount', 'subscriptionDueAmount',
+    'subscriptionPaidAmount', 'subscriptionPlan', 'subscriptionStatus', 'subscriptionValidTill',
+    'onboardingFeeAmount', 'onboardingFeePaid', 'onboardingFeePaidAt', 'onboardingFeePaymentId',
+    'onboardingFeePaymentMethod', 'onboardingFeePaymentOrderId', 'onboardingFeePaymentSignature',
+    'billingMode', 'businessModel', 'rejectionReason', 'rejectedAt',
+    'pendingLatitude', 'pendingLongitude', 'restaurantNameNormalized',
+];
+
+const toPublicRestaurant = (restaurant) => {
+    const out = { ...restaurant };
+    for (const key of PRIVATE_RESTAURANT_FIELDS) delete out[key];
+    return out;
+};
+
 export const getApprovedRestaurantController = async (req, res, next) => {
     try {
         const restaurant = await getApprovedRestaurantByIdOrSlug(req.params.id);
         if (!restaurant) {
             return res.status(404).json({ success: false, message: 'Restaurant not found' });
         }
-        return sendResponse(res, 200, 'Restaurant fetched successfully', { restaurant });
+        return sendResponse(res, 200, 'Restaurant fetched successfully', { restaurant: toPublicRestaurant(restaurant) });
     } catch (error) {
         next(error);
     }
