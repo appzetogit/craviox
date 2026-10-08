@@ -189,6 +189,9 @@ export function CartProvider({ children }) {
       const isAuthenticated = localStorage.getItem("user_authenticated") === "true" || !!localStorage.getItem("user_accessToken");
       if (cart.length > 0 || isAuthenticated) {
         localStorage.setItem("cart", JSON.stringify(normalizeCartData(cart)))
+      } else {
+        // An emptied guest cart must be cleared too, or the last item comes back on reload.
+        localStorage.removeItem("cart")
       }
     } catch {
       // ignore storage errors (private mode, quota, etc.)

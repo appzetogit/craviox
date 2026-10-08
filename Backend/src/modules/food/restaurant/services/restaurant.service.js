@@ -1940,7 +1940,9 @@ export const listPublicOffers = async (query = {}) => {
     if (subtotal !== undefined && subtotal !== null && subtotal !== '' && !isNaN(Number(subtotal))) {
         const numericSubtotal = Number(subtotal);
         if (numericSubtotal > 0) {
-            filter.AND.push({ OR: [{ minOrderValue: null }, { minOrderValue: { lte: numericSubtotal } }] });
+            // minOrderValue is NOT NULL (default 0); filtering on null made Prisma
+            // reject the whole query, so every call with a subtotal returned 500.
+            filter.AND.push({ minOrderValue: { lte: numericSubtotal } });
         }
     }
 

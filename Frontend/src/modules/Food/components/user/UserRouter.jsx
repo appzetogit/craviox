@@ -28,7 +28,8 @@ const SearchResults = lazy(() => import("@food/pages/user/search/ProfessionalSea
 const ProductDetail = lazy(() => import("@food/pages/user/ProductDetail"))
 
 // Cart
-const Cart = lazy(() => import("@food/pages/user/cart/Cart"))
+const CartScreen = lazy(() => import("@food/userApp/cart/CartScreen"))
+const CheckoutScreen = lazy(() => import("@food/userApp/cart/CheckoutScreen"))
 const SelectAddress = lazy(() => import("@food/pages/user/cart/SelectAddress"))
 const AddressSelectorPage = lazy(() => import("@food/pages/user/cart/AddressSelectorPage"))
 
@@ -131,7 +132,15 @@ export default function UserRouter() {
           <Route path="product/:id" element={<ProductDetail />} />
 
           {/* Cart - Now Public */}
-          <Route path="cart" element={<Cart />} />
+          <Route path="cart" element={<CartScreen />} />
+          <Route
+            path="checkout"
+            element={
+              <ProtectedRoute requiredRole="user" loginPath="/food/user/auth/login">
+                <CheckoutScreen />
+              </ProtectedRoute>
+            }
+          />
           <Route path="cart/select-address" element={<SelectAddress />} />
           <Route path="cart/address-selector" element={<AddressSelectorPage />} />
 

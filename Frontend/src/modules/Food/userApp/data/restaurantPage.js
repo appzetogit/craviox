@@ -70,7 +70,7 @@ export function useRestaurantPage(slug) {
       const [menuRes, addonRes, offerRes] = await Promise.allSettled([
         restaurantAPI.getMenuByRestaurantId(id),
         restaurantAPI.getAddonsByRestaurantId(id),
-        restaurantAPI.getPublicOffers({ restaurantId: id }),
+        restaurantAPI.getPublicOffers({ restaurantId: id }, { suppressErrorToast: true }),
       ])
       if (menuRes.status === "rejected") throw menuRes.reason
 
