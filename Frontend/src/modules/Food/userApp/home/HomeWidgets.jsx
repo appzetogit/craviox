@@ -18,7 +18,7 @@ export function SearchBar({ categories = [], onTap, onMic }) {
       className="flex h-12 min-w-0 flex-1 cursor-text items-center rounded-3xl pl-4 pr-1.5"
       style={{
         background: "var(--ca-surface)",
-        border: "1.2px solid rgba(235,46,0,0.35)",
+        border: "1.2px solid rgba(245,74,0,0.35)",
         boxShadow: "0 3px 10px rgba(0,0,0,0.06)",
       }}
     >
@@ -99,14 +99,14 @@ export function CategoryRow({ categories, loading, selectedId, onSelect, onSeeAl
             {isAll ? (
               <span
                 className="flex h-12 w-12 items-center justify-center rounded-full"
-                style={{ background: "var(--ca-primary)", boxShadow: "0 4px 10px rgba(235,46,0,0.25)" }}
+                style={{ background: "var(--ca-primary)", boxShadow: "0 4px 10px rgba(245,74,0,0.25)" }}
               >
                 <Icon name="grid_view" size={20} color="#fff" />
               </span>
             ) : isSeeAll ? (
               <span
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF1F2]"
-                style={{ border: "1.2px solid rgba(235,46,0,0.25)", boxShadow: "0 3px 8px rgba(0,0,0,0.05)" }}
+                style={{ border: "1.2px solid rgba(245,74,0,0.25)", boxShadow: "0 3px 8px rgba(0,0,0,0.05)" }}
               >
                 <Icon name="restaurant" size={20} color="var(--ca-primary)" />
               </span>
@@ -225,7 +225,7 @@ function Chip({ active, onClick, children }) {
       onClick={onClick}
       className="flex shrink-0 items-center rounded-[10px] px-3 py-[7px] transition-all duration-150"
       style={{
-        background: active ? "rgba(235,46,0,0.1)" : "var(--ca-surface)",
+        background: active ? "rgba(245,74,0,0.1)" : "var(--ca-surface)",
         border: active ? "1.5px solid var(--ca-primary)" : "1px solid #CBD5E1",
         boxShadow: active ? "none" : "0 2px 4px rgba(0,0,0,0.03)",
       }}

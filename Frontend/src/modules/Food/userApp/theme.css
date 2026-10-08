@@ -1,27 +1,30 @@
 /*
- * Design tokens for the customer screens, copied from the Flutter user app
- * (craviox_user/lib/src/presentation/branding). The app was designed at
- * 375px wide; sizes in these screens are that design's logical pixels.
+ * Design tokens for the customer screens. Layout and sizes copy the Flutter
+ * user app (craviox_user/lib/src/presentation/branding), designed at 375px
+ * wide; sizes here are that design's logical pixels.
  *
- * Primary shades follow AppColors: the primary's hue with a fixed HSL
- * lightness. #EB2E00 is hsl(11.74 100% 46%).
+ * Colours are the Craviox logo's: orange #F54A00 (hsl(18.1 100% 48%)) and
+ * the wordmark's near-black #061A19. Shades follow AppColors: the primary's
+ * hue at a fixed HSL lightness.
  */
 .ca-app {
-  --ca-primary: #eb2e00;
-  --ca-primary-light: hsl(11.74 100% 62%);
-  --ca-primary-deep: hsl(11.74 100% 42%);
-  --ca-primary-deep-text: hsl(11.74 85% 30%);
-  --ca-primary-tint: hsl(11.74 90% 96%);
-  --ca-primary-tint-strong: hsl(11.74 90% 91%);
-  --ca-primary-soft: hsl(11.74 90% 80%);
-  --ca-header: #eb2e00;
+  --ca-primary: #f54a00;
+  --ca-primary-light: hsl(18.1 100% 62%);
+  --ca-primary-deep: hsl(18.1 100% 42%);
+  --ca-primary-deep-text: hsl(18.1 85% 30%);
+  --ca-primary-tint: hsl(18.1 90% 96%);
+  --ca-primary-tint-strong: hsl(18.1 90% 91%);
+  --ca-primary-soft: hsl(18.1 90% 80%);
+  --ca-header: #f54a00;
+  /* The logo wordmark's near-black. */
+  --ca-ink: #061a19;
 
   --ca-bg: #fafdff;
   --ca-surface: #ffffff;
   --ca-card: #ffffff;
   --ca-card-border: #cbd5e1;
   --ca-border: #e2e8f0;
-  --ca-title: #0f172a;
+  --ca-title: #061a19;
   --ca-text: #334155;
   --ca-muted: #64748b;
   --ca-faint: #94a3b8;
@@ -35,9 +38,9 @@
 }
 
 .dark .ca-app {
-  --ca-primary-tint: hsl(11.74 35% 12%);
-  --ca-primary-tint-strong: hsl(11.74 40% 20%);
-  --ca-primary-soft: hsl(11.74 90% 80%);
+  --ca-primary-tint: hsl(18.1 35% 12%);
+  --ca-primary-tint-strong: hsl(18.1 40% 20%);
+  --ca-primary-soft: hsl(18.1 90% 80%);
   --ca-primary-deep-text: #ffffff;
 
   --ca-bg: #121212;

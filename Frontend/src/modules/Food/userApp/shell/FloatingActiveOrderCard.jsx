@@ -40,7 +40,7 @@ export default function FloatingActiveOrderCard({ order, timeRemaining, compact 
       >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: s.icon, height: s.icon, background: "rgba(235,46,0,0.12)" }}
+          style={{ width: s.icon, height: s.icon, background: "rgba(245,74,0,0.12)" }}
         >
           <Icon name={onTheWay ? "two_wheeler" : "soup_kitchen"} size={s.iconSize} color="var(--ca-primary)" />
         </span>

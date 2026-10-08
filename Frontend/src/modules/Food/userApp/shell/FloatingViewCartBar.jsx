@@ -22,7 +22,7 @@ export default function FloatingViewCartBar({ bottom = 16, aboveNav = true }) {
         type="button"
         onClick={() => navigate("/food/user/cart")}
         className="relative flex h-14 w-full items-center overflow-hidden rounded-3xl px-3 py-2 text-left text-white"
-        style={{ background: "var(--ca-primary)", boxShadow: "0 8px 20px rgba(235,46,0,0.4)" }}
+        style={{ background: "var(--ca-primary)", boxShadow: "0 8px 20px rgba(245,74,0,0.4)" }}
       >
         <span className="ca-glow-sweep pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/20 blur-md" />
         <span className="relative flex min-w-0 flex-1 flex-col leading-tight">

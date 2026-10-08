@@ -9,6 +9,8 @@ import useNotificationInbox from "@food/hooks/useNotificationInbox"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import OutOfZoneScreen from "@food/components/user/OutOfZoneScreen"
 import AppShell from "../shell/AppShell"
+import LocationSearch from "../ui/LocationSearch"
+import DesktopHome from "./DesktopHome"
 import Icon from "../ui/Icon"
 import RestaurantCard from "./RestaurantCard"
 import TopRestaurantCard from "./TopRestaurantCard"
@@ -17,17 +19,17 @@ import { AllCategoriesSheet, FilterSheet, ScheduleSheet } from "./HomeSheets"
 import { useHomeData } from "../data/useHomeData"
 import { activeFilterCount, filterAndSort, formatScheduleSlot, homeFilter, useHomeFilter } from "../data/homeFilter"
 
-const HEADER_RED = "#EB2E00"
+const HEADER_RED = "var(--ca-header)"
 const cap = (s) => String(s || "").replace(/^\w/, (c) => c.toUpperCase())
 
 /** Where we're delivering to: the default saved address, else the detected location / zone. */
 function useLocationLabels() {
-  const { defaultSavedAddress, savedAddressText, effectiveLocation, zone, isInService } = useDeliveryLocation() || {}
-  const a = defaultSavedAddress
+  // effectiveLocation is whichever is in use: the saved address (with its
+  // label) or the GPS / typed location.
+  const { effectiveLocation, zone, isInService } = useDeliveryLocation() || {}
   const title =
-    cap(a?.label) || a?.city || effectiveLocation?.area || effectiveLocation?.city || zone?.name || "Select location"
+    cap(effectiveLocation?.label) || effectiveLocation?.area || effectiveLocation?.city || zone?.name || "Select location"
   const subtitle =
-    savedAddressText ||
     effectiveLocation?.formattedAddress ||
     effectiveLocation?.address ||
     (isInService && zone?.name ? `Delivering to ${zone.name}` : "Tap to set your delivery address")
@@ -137,11 +139,10 @@ function startVoiceSearch(onText) {
 }
 
 /** Shown until we know where to deliver (location_access_prompt.dart). */
-function LocationRequired({ onEnable, onChoose }) {
-  const [asking, setAsking] = useState(false)
+function LocationRequired({ onChoose }) {
   return (
-    <div className="flex flex-col items-center px-8 pb-10 pt-12 text-center">
-      <span className="flex h-24 w-24 items-center justify-center rounded-full" style={{ background: "rgba(235,46,0,0.12)" }}>
+    <div className="flex flex-col items-center px-6 pb-10 pt-10 text-center">
+      <span className="flex h-24 w-24 items-center justify-center rounded-full" style={{ background: "rgba(245,74,0,0.12)" }}>
         <Icon name="location_off" size={44} color="var(--ca-primary)" />
       </span>
       <h2 className="mt-7 text-[22px] font-extrabold" style={{ color: "var(--ca-title)" }}>
@@ -150,30 +151,11 @@ function LocationRequired({ onEnable, onChoose }) {
       <p className="mt-3 text-[13.5px] leading-normal text-[#64748B]">
         Craviox requires your location to discover nearby restaurants, check delivery serviceability, and deliver your food.
       </p>
-      <button
-        type="button"
-        disabled={asking}
-        onClick={async () => {
-          setAsking(true)
-          try {
-            const loc = await onEnable()
-            if (!loc) toast.error("Couldn't get your location. Allow location access, or choose an address.")
-          } finally {
-            setAsking(false)
-          }
-        }}
-        className="mt-9 flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white disabled:opacity-80"
-        style={{ background: "var(--ca-primary)" }}
-      >
-        {asking ? (
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/50 border-t-white" />
-        ) : (
-          <Icon name="my_location" size={20} />
-        )}
-        {asking ? "Checking Location…" : "Enable Location"}
-      </button>
-      <button type="button" onClick={onChoose} className="mt-3.5 text-[13.5px] font-bold" style={{ color: "var(--ca-primary)" }}>
-        Choose a delivery address
+      <div className="mt-7 w-full">
+        <LocationSearch />
+      </div>
+      <button type="button" onClick={onChoose} className="mt-4 text-[13.5px] font-bold" style={{ color: "var(--ca-primary)" }}>
+        Choose a saved address
       </button>
     </div>
   )
@@ -188,13 +170,30 @@ const SectionTitle = ({ children, action }) => (
   </div>
 )
 
-/** Home tab (home_screen.dart). */
+/** Home: the Swiggy-style landing on a computer, the app layout on a phone. */
 export default function HomeScreen() {
+  return useIsDesktop() ? <DesktopHome /> : <MobileHome />
+}
+
+function useIsDesktop() {
+  const query = "(min-width: 1024px)"
+  const [desktop, setDesktop] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setDesktop(mq.matches)
+    mq.addEventListener("change", on)
+    return () => mq.removeEventListener("change", on)
+  }, [])
+  return desktop
+}
+
+/** Home tab on a phone (home_screen.dart). */
+function MobileHome() {
   const navigate = useNavigate()
   const authed = isModuleAuthenticated("user")
   const { vegMode, setVegMode } = useProfile()
   const { openLocationSelector } = useLocationSelector()
-  const { effectiveLocation, zoneStatus, zoneLoading, requestLiveLocation, loading: locating } = useDeliveryLocation() || {}
+  const { effectiveLocation, zoneStatus, zoneLoading, loading: locating } = useDeliveryLocation() || {}
   const { title, subtitle } = useLocationLabels()
   const { restaurants, categories, banners, reload } = useHomeData()
   const filter = useHomeFilter()
@@ -228,7 +227,14 @@ export default function HomeScreen() {
   if (outOfZone) return <OutOfZoneScreen location={effectiveLocation} />
 
   const hasCoords = Number.isFinite(Number(effectiveLocation?.latitude)) && Number.isFinite(Number(effectiveLocation?.longitude))
-  const needsLocation = !hasCoords && !zoneLoading && !locating
+  // Once the prompt is up it stays until a location arrives, so asking for
+  // GPS from inside it does not make it vanish mid-request.
+  const [promptLatched, setPromptLatched] = useState(false)
+  useEffect(() => {
+    if (hasCoords) setPromptLatched(false)
+    else if (!zoneLoading && !locating) setPromptLatched(true)
+  }, [hasCoords, zoneLoading, locating])
+  const needsLocation = !hasCoords && (promptLatched || (!zoneLoading && !locating))
   const failed = restaurants.error && !restaurants.list.length
   const loading = restaurants.loading && !restaurants.list.length
   const fade = "var(--ca-bg)"
@@ -282,14 +288,14 @@ export default function HomeScreen() {
       </div>
 
       {needsLocation && (
-        <LocationRequired onEnable={() => requestLiveLocation?.()} onChoose={openLocationSelector} />
+        <LocationRequired onChoose={openLocationSelector} />
       )}
 
       {/* 3. Hero banners */}
       <div className="px-2 pt-2">
         {failed && (
           <div className="flex flex-col items-center px-8 py-16 text-center">
-            <Icon name="wifi_off" size={56} color="rgba(235,46,0,0.35)" />
+            <Icon name="wifi_off" size={56} color="rgba(245,74,0,0.35)" />
             <p className="mt-4 text-base font-extrabold" style={{ color: "var(--ca-title)" }}>
               Couldn&apos;t load Craviox
             </p>
@@ -299,10 +305,11 @@ export default function HomeScreen() {
             </button>
           </div>
         )}
-        <PromoBannerCarousel banners={banners} onTap={openBanner} />
+        {!needsLocation && <PromoBannerCarousel banners={banners} onTap={openBanner} />}
       </div>
 
       {/* 4. Quick filters */}
+      {!needsLocation && (
       <div className="mt-3">
         <QuickFilterBar
           filter={filter}
@@ -316,6 +323,7 @@ export default function HomeScreen() {
           onRating4={homeFilter.toggleRating4}
         />
       </div>
+      )}
 
       {/* 5. Top restaurants: 2-row horizontal rail */}
       {(loading || list.length > 0) && (

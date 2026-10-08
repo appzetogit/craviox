@@ -49,7 +49,7 @@ export default function HomeFilterScreen() {
         </div>
       ) : restaurants.error && !restaurants.list.length ? (
         <div className="flex flex-col items-center px-8 py-16 text-center">
-          <Icon name="wifi_off" size={56} color="rgba(235,46,0,0.35)" />
+          <Icon name="wifi_off" size={56} color="rgba(245,74,0,0.35)" />
           <p className="mt-4 text-[19px] font-extrabold" style={{ color: "var(--ca-title)" }}>
             Couldn&apos;t load nearby restaurants
           </p>
