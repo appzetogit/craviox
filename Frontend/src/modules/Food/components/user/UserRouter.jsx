@@ -24,7 +24,7 @@ const TableBooking = lazy(() => import("@food/pages/user/dining/TableBooking"))
 const TableBookingConfirmation = lazy(() => import("@food/pages/user/dining/TableBookingConfirmation"))
 const TableBookingSuccess = lazy(() => import("@food/pages/user/dining/TableBookingSuccess"))
 const MyBookings = lazy(() => import("@food/pages/user/dining/MyBookings"))
-const SearchResults = lazy(() => import("@food/pages/user/search/ProfessionalSearch"))
+const SearchResults = lazy(() => import("@food/userApp/search/SearchScreen"))
 const ProductDetail = lazy(() => import("@food/pages/user/ProductDetail"))
 
 // Cart
@@ -34,13 +34,13 @@ const SelectAddress = lazy(() => import("@food/pages/user/cart/SelectAddress"))
 const AddressSelectorPage = lazy(() => import("@food/pages/user/cart/AddressSelectorPage"))
 
 // Orders
-const Orders = lazy(() => import("@food/pages/user/orders/Orders"))
+const Orders = lazy(() => import("@food/userApp/orders/OrdersScreen"))
 const OrderTracking = lazy(() => import("@food/pages/user/orders/OrderTracking"))
 const OrderInvoice = lazy(() => import("@food/pages/user/orders/OrderInvoice"))
 const UserOrderDetails = lazy(() => import("@food/pages/user/orders/UserOrderDetails"))
 
 // Offers
-const Offers = lazy(() => import("@food/pages/user/Offers"))
+const Offers = lazy(() => import("@food/userApp/offers/OffersScreen"))
 
 
 
@@ -48,7 +48,7 @@ const Offers = lazy(() => import("@food/pages/user/Offers"))
 
 
 // Profile
-const Profile = lazy(() => import("@food/pages/user/profile/Profile"))
+const Profile = lazy(() => import("@food/userApp/account/AccountScreen"))
 const EditProfile = lazy(() => import("@food/pages/user/profile/EditProfile"))
 const Payments = lazy(() => import("@food/pages/user/profile/Payments"))
 const AddPayment = lazy(() => import("@food/pages/user/profile/AddPayment"))
@@ -69,8 +69,8 @@ const Logout = lazy(() => import("@food/pages/user/profile/Logout"))
 const ReferEarn = lazy(() => import("@food/pages/user/profile/ReferEarn"))
 
 // Auth
-const SignIn = lazy(() => import("@food/pages/user/auth/SignIn"))
-const OTP = lazy(() => import("@food/pages/user/auth/OTP"))
+const SignIn = lazy(() => import("@food/userApp/auth/LoginScreen"))
+const OTP = lazy(() => import("@food/userApp/auth/OtpScreen"))
 const AuthCallback = lazy(() => import("@food/pages/user/auth/AuthCallback"))
 
 // Help
