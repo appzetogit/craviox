@@ -193,8 +193,8 @@ export default function UserLayout() {
   const tab = tabForPath(location.pathname)
   const isDesktop = useIsDesktop()
   // Rebuilt screens draw their own frame (AppShell / DesktopPage).
-  const ownFrame = /^\/(home|food\/user(\/(home-filter|restaurants\/[^/]+|cart|checkout))?)\/?$/.test(location.pathname)
-  const showAppTabBar = !isDesktop && tab !== null && tab !== "home"
+  const ownFrame = /^\/(home|food\/user(\/(home-filter|restaurants\/[^/]+|cart|checkout|search|orders|offers|profile|auth\/(login|sign-in|otp)))?)\/?$/.test(location.pathname)
+  const showAppTabBar = !isDesktop && tab !== null && !ownFrame
   // On a computer, pages not yet rebuilt get the desktop top bar instead.
   const normalizedPath = location.pathname.replace(/\/+$/, "")
   const isDining = normalizedPath === "/food/user/dining"
