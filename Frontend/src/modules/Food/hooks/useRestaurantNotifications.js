@@ -102,7 +102,7 @@ export const useRestaurantNotifications = () => {
             requireInteraction: true,
             silent: true,
             vibrate: [200, 100, 200, 100, 300],
-            icon: '/favicon.ico',
+            icon: '/icon-192.png',
             data: notificationOptions.data,
           });
           return;
@@ -114,7 +114,7 @@ export const useRestaurantNotifications = () => {
         tag: notificationOptions.tag,
         requireInteraction: true,
         silent: true,
-        icon: '/favicon.ico',
+        icon: '/icon-192.png',
         data: notificationOptions.data,
       });
     } catch (error) {

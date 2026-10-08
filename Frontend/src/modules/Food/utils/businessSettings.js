@@ -406,24 +406,11 @@ export const loadBusinessSettings = async ({ force = false } = {}) => {
 };
 
 /**
- * Update favicon in document
+ * Kept for its callers, but does nothing: the favicon is the fixed Craviox
+ * logo linked in index.html. Uploaded favicons used to replace it after load,
+ * so the tab icon changed from page to page.
  */
-export const updateFavicon = (url) => {
-  if (!url || typeof document === 'undefined') return;
-
-  // Remove existing favicons
-  const existingFavicons = document.querySelectorAll("link[rel*='icon']");
-  existingFavicons.forEach(el => el.remove());
-
-  // Add new favicon
-  const link = document.createElement("link");
-  link.rel = "icon";
-  link.type = "image/png";
-  link.href = url;
-  // Prevent third-party cookie warning (Cloudinary)
-  link.crossOrigin = "anonymous";
-  document.head.appendChild(link);
-};
+export const updateFavicon = () => {};
 
 const resolveLogoByModule = (settings, moduleName = "user") => {
   if (!settings || typeof settings !== "object") return "";

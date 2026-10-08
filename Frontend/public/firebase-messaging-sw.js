@@ -258,7 +258,7 @@ function initializeFirebaseInServiceWorker(config = {}) {
       if (!title && !body) return;
       self.registration.showNotification(title, {
         body,
-        icon: "/favicon.ico",
+        icon: "/icon-192.png",
         image,
         tag: notificationKey,
         renotify: true,
@@ -293,7 +293,7 @@ self.addEventListener("push", (event) => {
       event.waitUntil(
         self.registration.showNotification(title || "New update", {
           body: body || "",
-          icon: "/favicon.ico",
+          icon: "/icon-192.png",
           tag: getNotificationKey(payload),
           renotify: true,
           silent: false,
