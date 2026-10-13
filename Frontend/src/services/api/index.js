@@ -443,6 +443,12 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/feature-settings/${String(key)}`, body ?? {}, {
       contextModule: "admin",
     }),
+  getAppStatus: () =>
+    apiClient.get("/food/admin/app-status", { contextModule: "admin" }),
+  updateAppStatus: (app, config) =>
+    apiClient.put(`/food/admin/app-status/${encodeURIComponent(app)}`, config ?? {}, {
+      contextModule: "admin",
+    }),
   getSubAdmins: (params = {}) =>
     apiClient.get("/food/admin/sub-admins", { params, contextModule: "admin" }),
   createSubAdmin: (body = {}) =>

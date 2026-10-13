@@ -14,6 +14,7 @@ import notificationRoutes from '../core/notifications/notification.routes.js';
 import { authMiddleware } from '../core/auth/auth.middleware.js';
 import * as businessSettingsController from '../modules/food/admin/controllers/businessSettings.controller.js';
 import * as adminController from '../modules/food/admin/controllers/admin.controller.js';
+import * as appStatusController from '../modules/food/admin/controllers/appStatus.controller.js';
 import { requireRoles } from '../core/roles/role.middleware.js';
 import { getQueuesController } from '../controllers/queue.controller.js';
 import webhookRoutes from '../core/payments/routes/webhook.routes.js'; // ✅ NEW
@@ -57,6 +58,8 @@ router.get('/v1/food/admin/restaurant-subscription-settings/public', adminContro
 router.get('/v1/food/admin/feature-settings/public', adminController.getFeatureSettings);
 router.get('/v1/food/admin/fee-settings/public', adminController.getFeeSettings);
 router.get('/v1/food/admin/cashback-settings/public', getCashbackSettingsPublicController);
+// Coming soon / maintenance / force update, read by every app at startup.
+router.get('/v1/app-status/:app', appStatusController.getPublicAppStatus);
 
 router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), restaurantAdminRoutes);
 router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);

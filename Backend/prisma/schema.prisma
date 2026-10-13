@@ -2198,6 +2198,21 @@ model FoodFeatureSetting {
   @@map("food_feature_settings")
 }
 
+/// Launch state per app (coming soon / maintenance / live), its force-update
+/// floor and announcement banner. One row per app; `config` is validated by
+/// appStatus.service.js, which is the only writer.
+model FoodAppStatus {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  app    String @unique
+  config Json   @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("food_app_status")
+}
+
 model FoodPageContent {
   id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
 

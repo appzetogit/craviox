@@ -10,6 +10,7 @@ import * as adminController from '../controllers/admin.controller.js';
 import * as foodApprovalController from '../controllers/foodApproval.controller.js';
 import * as addonsApprovalController from '../controllers/addonsApproval.controller.js';
 import * as businessSettingsController from '../controllers/businessSettings.controller.js';
+import * as appStatusController from '../controllers/appStatus.controller.js';
 import * as feedbackExperienceController from '../controllers/feedbackExperience.controller.js';
 import * as notificationBroadcastController from '../controllers/notificationBroadcast.controller.js';
 import * as diningAdminController from '../../dining/controllers/diningAdmin.controller.js';
@@ -90,7 +91,7 @@ const resolveSectionFromRequest = (path = '', method = '') => {
     if (path.startsWith('/withdrawals')) return 'transaction_management';
     if (path.startsWith('/feedback-experiences')) return 'report_management';
     if (path.startsWith('/reports')) return 'report_management';
-    if (path.startsWith('/feature-settings') || path.startsWith('/business-settings') || path.startsWith('/power-scanning') || path.startsWith('/notifications')) return 'system_settings';
+    if (path.startsWith('/feature-settings') || path.startsWith('/business-settings') || path.startsWith('/power-scanning') || path.startsWith('/notifications') || path.startsWith('/app-status')) return 'system_settings';
     if (path.startsWith('/pages-social-media')) return 'pages_social_media';
     // These four sections were grantable in the role editor but appeared in no
     // guard, so ticking their boxes did nothing at all. The sidebar hid the menu
@@ -143,6 +144,7 @@ router.use('/reports', requireAdminPermission('report_management', 'view'));
 router.use('/feature-settings', requireAdminPermission('system_settings', 'view'));
 router.use('/business-settings', requireAdminPermission('system_settings', 'view'));
 router.use('/power-scanning', requireAdminPermission('system_settings', 'view'));
+router.use('/app-status', requireAdminPermission('system_settings', 'view'));
 router.use('/notifications', requireAdminPermission('system_settings', 'view'));
 router.use('/pages-social-media', requireAdminPermission('pages_social_media', 'view'));
 router.use('/sidebar-badges', requireAdminPermission('dashboard', 'view'));
@@ -232,6 +234,8 @@ router.post('/restaurant-subscriptions/invoices/:invoiceId/waive', subscriptionB
 router.post('/restaurant-subscriptions/invoices/:invoiceId/adjust', subscriptionBillingController.adjustInvoice);
 router.post('/restaurant-subscriptions/run-billing', subscriptionBillingController.runSubscriptionBilling);
 router.get('/feature-settings', adminController.getFeatureSettings);
+router.get('/app-status', appStatusController.listAppStatus);
+router.put('/app-status/:app', appStatusController.updateAppStatus);
 router.patch('/feature-settings/:key', adminController.updateFeatureSetting);
 router.get('/restaurants/reviews', adminController.getRestaurantReviews);
 router.get(

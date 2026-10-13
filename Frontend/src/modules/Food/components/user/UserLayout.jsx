@@ -20,6 +20,7 @@ import useActiveOrderTracking from "@food/hooks/useActiveOrderTracking"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { useUserNotifications } from "../../hooks/useUserNotifications"
 import { shouldSkipScrollResetForHome } from "@food/utils/homeScrollRestore"
+import AppStatusGate from "@food/userApp/status/AppStatusGate"
 
 // Create SearchOverlay context with default value
 const SearchOverlayContext = createContext({
@@ -172,7 +173,16 @@ function LocationSelectorProvider({ children }) {
   )
 }
 
+/** The admin can put the website in coming soon / maintenance (Admin → App Status). */
 export default function UserLayout() {
+  return (
+    <AppStatusGate app="web">
+      <UserLayoutContent />
+    </AppStatusGate>
+  )
+}
+
+function UserLayoutContent() {
   const location = useLocation()
 
   useEffect(() => {
