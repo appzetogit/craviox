@@ -98,6 +98,7 @@ const PATH_PREFIX_TO_SECTION = [
   { prefix: "/admin/food/power-scanning", section: "system_settings" },
   { prefix: "/admin/food/business-setup", section: "system_settings" },
   { prefix: "/admin/food/app-status", section: "system_settings" },
+  { prefix: "/admin/food/petpooja", section: "system_settings" },
   { prefix: "/admin/food/broadcast-notification", section: "system_settings" },
   { prefix: "/admin/food/pages-social-media", section: "pages_social_media" },
   { prefix: "/admin/food/careers", section: "pages_social_media" },

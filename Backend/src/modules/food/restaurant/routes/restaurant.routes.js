@@ -97,6 +97,7 @@ import {
 import { listBannersForRestaurantAppController } from '../../admin/controllers/restaurantAppBanner.controller.js';
 
 import { cacheResponse, invalidateCache } from '../../../../middleware/cache.js';
+import { posMenuLock } from '../../../pos/petpooja/petpooja.routes.js';
 
 const router = express.Router();
 
@@ -258,9 +259,9 @@ router.patch('/banners/order', authMiddleware, requireRestaurant, reorderBanners
 
 // Categories (restaurant dashboard). Read-only for item creation, CRUD for Menu Categories page.
 router.get('/categories', authMiddleware, requireRestaurant, listCategoriesController);
-router.post('/categories', authMiddleware, requireRestaurant, createCategoryController);
-router.patch('/categories/:id', authMiddleware, requireRestaurant, updateCategoryController);
-router.delete('/categories/:id', authMiddleware, requireRestaurant, deleteCategoryController);
+router.post('/categories', authMiddleware, requireRestaurant, posMenuLock, createCategoryController);
+router.patch('/categories/:id', authMiddleware, requireRestaurant, posMenuLock, updateCategoryController);
+router.delete('/categories/:id', authMiddleware, requireRestaurant, posMenuLock, deleteCategoryController);
 
 // Menu (restaurant dashboard) - only fields needed by UI
 router.get('/menu', authMiddleware, requireRestaurant, getMenuController);
@@ -276,24 +277,24 @@ router.post('/feedback-experience', authMiddleware, requireRestaurant, feedbackE
 router.get('/restaurants/:id/addons', cacheResponse(600, 'restaurant_addons'), getPublicRestaurantAddonsController);
 
 // Foods (restaurant creates/updates items -> stored in food_items collection)
-router.post('/foods', authMiddleware, requireRestaurant, async (req, res, next) => {
+router.post('/foods', authMiddleware, requireRestaurant, posMenuLock, async (req, res, next) => {
     await invalidateCache('restaurant_menu:*');
     next();
 }, createRestaurantFoodController);
-router.patch('/foods/:id', authMiddleware, requireRestaurant, async (req, res, next) => {
+router.patch('/foods/:id', authMiddleware, requireRestaurant, posMenuLock, async (req, res, next) => {
     await invalidateCache('restaurant_menu:*');
     next();
 }, updateRestaurantFoodController);
 
 // Bulk Menu Upload
 router.get('/bulk-upload/template', authMiddleware, requireRestaurant, downloadBulkMenuTemplateController);
-router.post('/bulk-upload', authMiddleware, requireRestaurant, upload.single('file'), uploadBulkMenuController);
+router.post('/bulk-upload', authMiddleware, requireRestaurant, posMenuLock, upload.single('file'), uploadBulkMenuController);
 
 // Add-ons (restaurant dashboard) - approval handled by admin
 router.get('/addons', authMiddleware, requireRestaurant, listAddonsController);
-router.post('/addons', authMiddleware, requireRestaurant, createAddonController);
-router.patch('/addons/:id', authMiddleware, requireRestaurant, updateAddonController);
-router.delete('/addons/:id', authMiddleware, requireRestaurant, deleteAddonController);
+router.post('/addons', authMiddleware, requireRestaurant, posMenuLock, createAddonController);
+router.patch('/addons/:id', authMiddleware, requireRestaurant, posMenuLock, updateAddonController);
+router.delete('/addons/:id', authMiddleware, requireRestaurant, posMenuLock, deleteAddonController);
 
 // Orders (restaurant dashboard)
 router.get('/orders', authMiddleware, requireRestaurant, orderController.listOrdersRestaurantController);

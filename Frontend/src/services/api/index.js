@@ -460,6 +460,28 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/careers/applications/${encodeURIComponent(id)}`, body ?? {}, { contextModule: "admin" }),
   deleteCareerApplication: (id) =>
     apiClient.delete(`/food/admin/careers/applications/${encodeURIComponent(id)}`, { contextModule: "admin" }),
+  getPetpoojaConfig: () => apiClient.get("/food/admin/integrations/petpooja/config", { contextModule: "admin" }),
+  updatePetpoojaConfig: (body) =>
+    apiClient.put("/food/admin/integrations/petpooja/config", body ?? {}, { contextModule: "admin" }),
+  rotatePetpoojaToken: () =>
+    apiClient.post("/food/admin/integrations/petpooja/config/rotate-token", {}, { contextModule: "admin" }),
+  getPetpoojaLinks: () => apiClient.get("/food/admin/integrations/petpooja/links", { contextModule: "admin" }),
+  createPetpoojaLink: (body) =>
+    apiClient.post("/food/admin/integrations/petpooja/links", body ?? {}, { contextModule: "admin" }),
+  updatePetpoojaLink: (id, body) =>
+    apiClient.patch(`/food/admin/integrations/petpooja/links/${encodeURIComponent(id)}`, body ?? {}, { contextModule: "admin" }),
+  deletePetpoojaLink: (id) =>
+    apiClient.delete(`/food/admin/integrations/petpooja/links/${encodeURIComponent(id)}`, { contextModule: "admin" }),
+  syncPetpoojaMenu: (id) =>
+    apiClient.post(`/food/admin/integrations/petpooja/links/${encodeURIComponent(id)}/sync-menu`, {}, { contextModule: "admin", timeout: 60000 }),
+  importPetpoojaMenu: (id, menu) =>
+    apiClient.post(`/food/admin/integrations/petpooja/links/${encodeURIComponent(id)}/import-menu`, { menu }, { contextModule: "admin", timeout: 60000 }),
+  getPetpoojaOrders: (params = {}) =>
+    apiClient.get("/food/admin/integrations/petpooja/orders", { params, contextModule: "admin" }),
+  retryPetpoojaOrder: (orderId) =>
+    apiClient.post(`/food/admin/integrations/petpooja/orders/${encodeURIComponent(orderId)}/retry`, {}, { contextModule: "admin", timeout: 30000 }),
+  getPetpoojaLogs: (params = {}) =>
+    apiClient.get("/food/admin/integrations/petpooja/logs", { params, contextModule: "admin" }),
   downloadCareerResume: (id) =>
     apiClient.get(`/food/admin/careers/applications/${encodeURIComponent(id)}/resume`, {
       responseType: "blob",

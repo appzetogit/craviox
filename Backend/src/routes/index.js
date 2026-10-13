@@ -25,6 +25,7 @@ import { getCashbackSettingsPublicController } from '../modules/food/user/contro
 import { config } from '../config/env.js';
 import { getRateLimitSummary, careersApplyRateLimiter } from '../middleware/rateLimit.js';
 import * as careersController from '../modules/careers/careers.controller.js';
+import { petpoojaWebhookRoutes } from '../modules/pos/petpooja/petpooja.routes.js';
 
 const router = express.Router();
 
@@ -65,6 +66,8 @@ router.get('/v1/app-status/:app', appStatusController.getPublicAppStatus);
 router.get('/v1/careers/jobs', careersController.listJobs);
 router.get('/v1/careers/jobs/:slug', careersController.getJob);
 router.post('/v1/careers/apply', careersApplyRateLimiter, careersController.parseResume, careersController.apply);
+// Petpooja POS callbacks (menu, stock, outlet status, order status). Token-guarded.
+router.use('/v1/integrations/petpooja', petpoojaWebhookRoutes);
 
 router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), restaurantAdminRoutes);
 router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);

@@ -797,6 +797,7 @@ model FoodRestaurant {
   createdCategories FoodCategory[]               @relation("CategoryCreator")
   menu              FoodRestaurantMenu?
   outletTimings     FoodRestaurantOutletTimings?
+  posLink           PosRestaurantLink?
   /// Defaults to the previous behaviour so existing restaurants bill exactly
   /// as they did before the modes existed.
   billingMode       RestaurantBillingMode        @default(commission_overall)
@@ -2266,6 +2267,114 @@ model CareerApplication {
   @@index([status, createdAt])
   @@index([jobId])
   @@map("career_applications")
+}
+
+/// Petpooja partner credentials and endpoints (one row). Set in Admin → Petpooja.
+model PetpoojaConfig {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  enabled              Boolean @default(false)
+  environment          String  @default("sandbox")
+  appKey               String  @default("")
+  appSecret            String  @default("")
+  accessToken          String  @default("")
+  saveOrderUrl         String  @default("")
+  updateOrderStatusUrl String  @default("")
+  fetchMenuUrl         String  @default("")
+  /// Secret Petpooja must send on every callback (?token= or x-craviox-token).
+  webhookToken         String  @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("petpooja_config")
+}
+
+/// A Craviox restaurant connected to its outlet in Petpooja.
+model PosRestaurantLink {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  restaurantId   String  @unique @db.VarChar(24)
+  provider       String  @default("petpooja")
+  externalRestId String  @unique
+  enabled        Boolean @default(true)
+  /// Menu, stock and prices come from the POS; menu editing in Craviox is locked.
+  syncMenu       Boolean @default(true)
+  /// New orders are sent to the POS; status comes back from it.
+  pushOrders     Boolean @default(true)
+
+  lastMenuSyncAt     DateTime?
+  lastMenuSyncStatus String    @default("")
+  lastMenuSyncNote   String    @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant FoodRestaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("pos_restaurant_links")
+}
+
+/// Which POS id is which Craviox record, per restaurant.
+model PosEntityMap {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  restaurantId String @db.VarChar(24)
+  /// category | item | variant | addon
+  kind         String
+  externalId   String
+  localId      String @db.VarChar(24)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurantId, kind, externalId])
+  @@index([restaurantId, kind, localId])
+  @@map("pos_entity_maps")
+}
+
+/// One Craviox order sent to the POS.
+model PosOrderLink {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  orderId         String    @unique @db.VarChar(24)
+  restaurantId    String    @db.VarChar(24)
+  externalOrderId String    @default("")
+  /// pending | sent | failed | cancelled
+  pushStatus      String    @default("pending")
+  attempts        Int       @default(0)
+  lastError       String    @default("")
+  /// Last status code the POS reported, e.g. "1" accepted, "5" food ready.
+  posStatus       String    @default("")
+  sentAt          DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@index([pushStatus, createdAt(sort: Desc)])
+  @@map("pos_order_links")
+}
+
+/// Every call to and from the POS, for the admin activity log.
+model PosEventLog {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  restaurantId String? @db.VarChar(24)
+  orderId      String? @db.VarChar(24)
+  /// in = POS called us, out = we called the POS
+  direction    String
+  type         String
+  ok           Boolean
+  message      String  @default("")
+  payload      Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@index([ok, createdAt(sort: Desc)])
+  @@map("pos_event_logs")
 }
 
 

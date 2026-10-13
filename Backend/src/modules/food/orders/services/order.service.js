@@ -39,6 +39,7 @@ import {
   applyAggregateRating,
   buildDeliverySocketPayload,
   notifyRestaurantNewOrder,
+  notifyPosOrderCancelled,
   canExposeOrderToRestaurant,
   isStatusAdvance,
   STATUS_PRIORITY,
@@ -348,6 +349,7 @@ async function expireUnacceptedOrders(where = {}) {
     } catch (err) {
       logger.warn(`expireUnacceptedOrders socket emit failed: ${err?.message || err}`);
     }
+    notifyPosOrderCancelled(doc.id, "Not accepted in time");
   }
 
   return docs.length;
@@ -1425,6 +1427,7 @@ export async function cancelOrder(orderId, userId, reason) {
     logger.warn(`cancelOrder socket emit failed: ${err?.message || err}`);
   }
 
+  notifyPosOrderCancelled(order.id, reason || "Cancelled by customer");
   return normalizeOrderForClient(updated);
 }
 
@@ -2430,6 +2433,9 @@ export async function updateOrderStatusAdmin(orderId, orderStatus, note = "", ad
     logger.warn(`Admin status update socket emit failed: ${err?.message || err}`);
   }
 
+  if (String(orderStatus) === "cancelled_by_admin") {
+    notifyPosOrderCancelled(updated?._id || updated?.id || order._id, note || "Cancelled by support");
+  }
   return normalizeOrderForClient(updated);
 }
 

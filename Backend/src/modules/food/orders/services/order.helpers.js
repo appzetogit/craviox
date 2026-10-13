@@ -484,6 +484,24 @@ export function canExposeOrderToRestaurant(orderLike) {
   return ["paid", "authorized", "captured", "settled"].includes(status);
 }
 
+/**
+ * Restaurants on a POS (Admin → Petpooja) also get the order there. Loaded
+ * lazily and never awaited: a POS outage must not slow or fail an order, and
+ * the POS module imports the order service, so a static import would cycle.
+ */
+export function pushOrderToPos(orderId) {
+  import("../../../pos/petpooja/petpooja.orders.js")
+    .then((m) => m.pushOrderToPetpooja(String(orderId)))
+    .catch((err) => logger.warn(`[POS] order push failed to start for ${orderId}: ${err?.message || err}`));
+}
+
+/** Tells the restaurant's POS that we cancelled an order it already has. */
+export function notifyPosOrderCancelled(orderId, reason = "") {
+  import("../../../pos/petpooja/petpooja.orders.js")
+    .then((m) => m.cancelOrderInPetpooja(String(orderId), reason))
+    .catch((err) => logger.warn(`[POS] cancel push failed to start for ${orderId}: ${err?.message || err}`));
+}
+
 export async function notifyRestaurantNewOrder(orderDoc) {
   try {
     if (!orderDoc || !canExposeOrderToRestaurant(orderDoc)) return;
@@ -513,6 +531,9 @@ export async function notifyRestaurantNewOrder(orderDoc) {
       data: { restaurantNotifiedAt: new Date() },
     });
     if (claimed === 0) return;
+
+    // Exactly once per order, thanks to the claim above.
+    pushOrderToPos(orderDoc._id || orderDoc.id);
 
     const str = (v) => (v === undefined || v === null ? "" : String(v));
     const itemCount = Array.isArray(orderDoc.items)
