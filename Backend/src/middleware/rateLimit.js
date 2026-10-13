@@ -249,6 +249,16 @@ export const uploadRateLimiter = createLimiter({
     keyGenerator: userOrIpRateLimitKey,
 });
 
+/** Careers apply form: public and carries a file, so a tight per-IP cap. */
+export const careersApplyRateLimiter = createLimiter({
+    name: 'careers-apply',
+    prefix: 'rl:careers',
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: 'Too many applications from this network. Please try again in an hour.',
+    keyGenerator: ipRateLimitKey,
+});
+
 export const getRateLimitSummary = () => ({
     enabled: config.rateLimitEnabled,
     environment: config.nodeEnv,

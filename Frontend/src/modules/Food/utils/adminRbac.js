@@ -100,6 +100,7 @@ const PATH_PREFIX_TO_SECTION = [
   { prefix: "/admin/food/app-status", section: "system_settings" },
   { prefix: "/admin/food/broadcast-notification", section: "system_settings" },
   { prefix: "/admin/food/pages-social-media", section: "pages_social_media" },
+  { prefix: "/admin/food/careers", section: "pages_social_media" },
   { prefix: "/admin/food/employees", section: "sub_admin_management" },
   { prefix: "/admin/food/employee-role", section: "sub_admin_management" },
 ];

@@ -2212,6 +2212,62 @@ model FoodAppStatus {
 
   @@map("food_app_status")
 }
+/// Job openings on craviox.com/careers, managed from the admin panel.
+model CareerJob {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  slug             String   @unique
+  title            String
+  department       String   @default("")
+  location         String   @default("")
+  employmentType   String   @default("full_time")
+  experience       String   @default("")
+  salary           String   @default("")
+  summary          String   @default("")
+  description      String   @default("")
+  responsibilities String[] @default([])
+  requirements     String[] @default([])
+  isActive         Boolean  @default(true)
+  sortOrder        Int      @default(0)
+
+  applications CareerApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("career_jobs")
+}
+
+/// Someone applying for a job (or sending a general application when jobId is null).
+/// The resume is stored outside the public uploads folder; only admins can download it.
+model CareerApplication {
+  id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)
+
+  jobId String?    @db.VarChar(24)
+  job   CareerJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  jobTitle   String @default("")
+  name       String
+  email      String
+  phone      String
+  city       String @default("")
+  linkUrl    String @default("")
+  coverNote  String @default("")
+  resumePath String @default("")
+  resumeName String @default("")
+  resumeMime String @default("")
+  status     String @default("new")
+  adminNote  String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([jobId])
+  @@map("career_applications")
+}
+
 
 model FoodPageContent {
   id String @id @default(dbgenerated("encode(gen_random_bytes(12), 'hex')")) @db.VarChar(24)

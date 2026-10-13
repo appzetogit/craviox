@@ -449,6 +449,22 @@ export const adminAPI = {
     apiClient.put(`/food/admin/app-status/${encodeURIComponent(app)}`, config ?? {}, {
       contextModule: "admin",
     }),
+  getCareerJobs: () => apiClient.get("/food/admin/careers/jobs", { contextModule: "admin" }),
+  createCareerJob: (body) => apiClient.post("/food/admin/careers/jobs", body ?? {}, { contextModule: "admin" }),
+  updateCareerJob: (id, body) =>
+    apiClient.patch(`/food/admin/careers/jobs/${encodeURIComponent(id)}`, body ?? {}, { contextModule: "admin" }),
+  deleteCareerJob: (id) => apiClient.delete(`/food/admin/careers/jobs/${encodeURIComponent(id)}`, { contextModule: "admin" }),
+  getCareerApplications: (params = {}) =>
+    apiClient.get("/food/admin/careers/applications", { params, contextModule: "admin" }),
+  updateCareerApplication: (id, body) =>
+    apiClient.patch(`/food/admin/careers/applications/${encodeURIComponent(id)}`, body ?? {}, { contextModule: "admin" }),
+  deleteCareerApplication: (id) =>
+    apiClient.delete(`/food/admin/careers/applications/${encodeURIComponent(id)}`, { contextModule: "admin" }),
+  downloadCareerResume: (id) =>
+    apiClient.get(`/food/admin/careers/applications/${encodeURIComponent(id)}/resume`, {
+      responseType: "blob",
+      contextModule: "admin",
+    }),
   getSubAdmins: (params = {}) =>
     apiClient.get("/food/admin/sub-admins", { params, contextModule: "admin" }),
   createSubAdmin: (body = {}) =>

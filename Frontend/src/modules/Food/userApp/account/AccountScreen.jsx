@@ -237,6 +237,7 @@ export default function AccountScreen() {
     { icon: "favorite", label: "Favourites", onClick: () => navigate("/food/user/profile/favorites") },
     { icon: "headset_mic", label: "Help & Support", onClick: () => navigate("/food/user/profile/support") },
     { icon: "info", label: "About Craviox", onClick: () => navigate("/food/user/profile/about") },
+    { icon: "work", label: "Careers", onClick: () => navigate("/careers") },
     { icon: "health_and_safety", label: "Report a safety emergency", onClick: () => navigate("/food/user/profile/report-safety-emergency") },
   ]
 

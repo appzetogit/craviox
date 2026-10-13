@@ -11,6 +11,7 @@ import * as foodApprovalController from '../controllers/foodApproval.controller.
 import * as addonsApprovalController from '../controllers/addonsApproval.controller.js';
 import * as businessSettingsController from '../controllers/businessSettings.controller.js';
 import * as appStatusController from '../controllers/appStatus.controller.js';
+import * as careersController from '../../../careers/careers.controller.js';
 import * as feedbackExperienceController from '../controllers/feedbackExperience.controller.js';
 import * as notificationBroadcastController from '../controllers/notificationBroadcast.controller.js';
 import * as diningAdminController from '../../dining/controllers/diningAdmin.controller.js';
@@ -92,7 +93,7 @@ const resolveSectionFromRequest = (path = '', method = '') => {
     if (path.startsWith('/feedback-experiences')) return 'report_management';
     if (path.startsWith('/reports')) return 'report_management';
     if (path.startsWith('/feature-settings') || path.startsWith('/business-settings') || path.startsWith('/power-scanning') || path.startsWith('/notifications') || path.startsWith('/app-status')) return 'system_settings';
-    if (path.startsWith('/pages-social-media')) return 'pages_social_media';
+    if (path.startsWith('/pages-social-media') || path.startsWith('/careers')) return 'pages_social_media';
     // These four sections were grantable in the role editor but appeared in no
     // guard, so ticking their boxes did nothing at all. The sidebar hid the menu
     // entry, which made them look enforced -- the API was open to any sub-admin
@@ -147,6 +148,7 @@ router.use('/power-scanning', requireAdminPermission('system_settings', 'view'))
 router.use('/app-status', requireAdminPermission('system_settings', 'view'));
 router.use('/notifications', requireAdminPermission('system_settings', 'view'));
 router.use('/pages-social-media', requireAdminPermission('pages_social_media', 'view'));
+router.use('/careers', requireAdminPermission('pages_social_media', 'view'));
 router.use('/sidebar-badges', requireAdminPermission('dashboard', 'view'));
 
 router.post('/sub-admins', requireAdminPermission('sub_admin_management', 'create'), adminController.createSubAdmin);
@@ -236,6 +238,14 @@ router.post('/restaurant-subscriptions/run-billing', subscriptionBillingControll
 router.get('/feature-settings', adminController.getFeatureSettings);
 router.get('/app-status', appStatusController.listAppStatus);
 router.put('/app-status/:app', appStatusController.updateAppStatus);
+router.get('/careers/jobs', careersController.adminListJobs);
+router.post('/careers/jobs', careersController.adminCreateJob);
+router.patch('/careers/jobs/:id', careersController.adminUpdateJob);
+router.delete('/careers/jobs/:id', careersController.adminDeleteJob);
+router.get('/careers/applications', careersController.adminListApplications);
+router.patch('/careers/applications/:id', careersController.adminUpdateApplication);
+router.delete('/careers/applications/:id', careersController.adminDeleteApplication);
+router.get('/careers/applications/:id/resume', careersController.adminDownloadResume);
 router.patch('/feature-settings/:key', adminController.updateFeatureSetting);
 router.get('/restaurants/reviews', adminController.getRestaurantReviews);
 router.get(

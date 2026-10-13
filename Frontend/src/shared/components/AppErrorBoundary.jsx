@@ -1,5 +1,28 @@
 import { Component } from 'react'
 
+// Shared with the vite:preloadError handler in index.jsx, so the two never
+// reload back to back in a loop.
+const RELOAD_FLAG = 'chunk_reload_at'
+const RELOAD_COOLDOWN_MS = 15000
+
+/** A screen that failed because its file is from an older deploy. */
+const isChunkError = (error) =>
+    /Loading chunk|dynamically imported module|Importing a module script failed|error loading dynamically|reading 'default'/i
+        .test(String(error?.message || error || ''))
+
+/** Reload once to pick up the new version; false if we just tried that. */
+function reloadForNewVersion() {
+    try {
+        const last = Number(sessionStorage.getItem(RELOAD_FLAG) || 0)
+        if (Date.now() - last < RELOAD_COOLDOWN_MS) return false
+        sessionStorage.setItem(RELOAD_FLAG, String(Date.now()))
+    } catch {
+        // Storage blocked: still reload; the cooldown just cannot be enforced.
+    }
+    window.location.reload()
+    return true
+}
+
 /**
  * Catches render errors so one broken screen does not take the whole app down.
  *
@@ -19,7 +42,7 @@ export default class AppErrorBoundary extends Component {
     }
 
     static getDerivedStateFromError(error) {
-        return { error }
+        return { error, reloading: false }
     }
 
     componentDidMount() {
@@ -52,6 +75,20 @@ export default class AppErrorBoundary extends Component {
     }
 
     componentDidCatch(error, info) {
+        // An old tab after a deploy: quietly load the new version instead of
+        // showing an error. Only if that already failed do we show the screen.
+        // index.jsx's vite:preloadError handler may have started that reload a
+        // moment ago (it swallows the failed import, which is what lands here).
+        let justReloaded = false
+        try {
+            justReloaded = Date.now() - Number(sessionStorage.getItem(RELOAD_FLAG) || 0) < 3000
+        } catch {
+            // Storage blocked: fall through to reloadForNewVersion.
+        }
+        if (isChunkError(error) && (justReloaded || reloadForNewVersion())) {
+            this.setState({ reloading: true })
+            return
+        }
         console.error('Unhandled render error:', error, info?.componentStack)
         // Also to the server log, so a crash on a customer's phone can be seen
         // and fixed (POST /api/v1/client-errors only logs it).
@@ -74,13 +111,23 @@ export default class AppErrorBoundary extends Component {
     }
 
     render() {
-        const { error } = this.state
+        const { error, reloading } = this.state
         if (!error) return this.props.children
+
+        if (reloading) {
+            return (
+                <div style={{
+                    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'Poppins, system-ui, sans-serif', color: '#525252', fontSize: '14px', background: '#fff',
+                }}>
+                    Loading the latest version…
+                </div>
+            )
+        }
 
         // A failed dynamic import is almost always a stale bundle, not a bug in
         // the screen itself, so it is worth saying so plainly.
-        const isChunkError = /Loading chunk|dynamically imported module|reading 'default'/i
-            .test(String(error?.message || ''))
+        const chunkError = isChunkError(error)
 
         return (
             <div style={{
@@ -92,10 +139,10 @@ export default class AppErrorBoundary extends Component {
                     padding: '32px', boxShadow: '0 1px 3px rgba(0,0,0,.1)', textAlign: 'center',
                 }}>
                     <h1 style={{ margin: '0 0 8px', fontSize: '20px', color: '#171717' }}>
-                        {isChunkError ? 'This page needs reloading' : 'Something went wrong'}
+                        {chunkError ? 'This page needs reloading' : 'Something went wrong'}
                     </h1>
                     <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#525252', lineHeight: 1.6 }}>
-                        {isChunkError
+                        {chunkError
                             ? 'The app was updated while this tab was open, so part of it could not load. Reloading picks up the new version.'
                             : 'This screen hit an unexpected error. Reloading usually clears it.'}
                     </p>
@@ -103,7 +150,7 @@ export default class AppErrorBoundary extends Component {
                         type="button"
                         onClick={() => window.location.reload()}
                         style={{
-                            background: '#008078', color: '#fff', border: 'none', borderRadius: '8px',
+                            background: '#F54A00', color: '#fff', border: 'none', borderRadius: '8px',
                             padding: '10px 20px', fontSize: '14px', cursor: 'pointer', fontWeight: 500,
                         }}
                     >

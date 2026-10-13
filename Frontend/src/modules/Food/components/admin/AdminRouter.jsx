@@ -106,6 +106,7 @@ const EmployeeList = lazy(() => import("@food/pages/admin/employees/EmployeeList
 const BusinessSetup = lazy(() => import("@food/pages/admin/settings/BusinessSetup"));
 const FeatureSettings = lazy(() => import("@food/pages/admin/settings/FeatureSettings"));
 const AppStatus = lazy(() => import("@food/pages/admin/settings/AppStatus"));
+const Careers = lazy(() => import("@food/pages/admin/settings/Careers"));
 const PowerScanning = lazy(() => import("@food/pages/admin/settings/PowerScanning"));
 const EmailTemplate = lazy(() => import("@food/pages/admin/settings/EmailTemplate"));
 const ThemeSettings = lazy(() => import("@food/pages/admin/settings/ThemeSettings"));
@@ -351,6 +352,7 @@ export default function AdminRouter() {
             {/* SYSTEM & BUSINESS SETTINGS */}
             <Route path="business-setup" element={<BusinessSetup />} />
             <Route path="app-status" element={<AppStatus />} />
+            <Route path="careers" element={<Careers />} />
             <Route path="feature-settings" element={<FeatureSettingsRouteGuard />} />
             <Route path="power-scanning" element={<SuperPowersRouteGuard><PowerScanning /></SuperPowersRouteGuard>} />
             <Route path="email-template" element={<EmailTemplate />} />

@@ -23,7 +23,8 @@ import chatRoutes from '../modules/food/chat/routes/chat.routes.js';
 import { requireAdminPermission } from '../core/roles/adminPermission.middleware.js';
 import { getCashbackSettingsPublicController } from '../modules/food/user/controllers/cashback.controller.js';
 import { config } from '../config/env.js';
-import { getRateLimitSummary } from '../middleware/rateLimit.js';
+import { getRateLimitSummary, careersApplyRateLimiter } from '../middleware/rateLimit.js';
+import * as careersController from '../modules/careers/careers.controller.js';
 
 const router = express.Router();
 
@@ -60,6 +61,10 @@ router.get('/v1/food/admin/fee-settings/public', adminController.getFeeSettings)
 router.get('/v1/food/admin/cashback-settings/public', getCashbackSettingsPublicController);
 // Coming soon / maintenance / force update, read by every app at startup.
 router.get('/v1/app-status/:app', appStatusController.getPublicAppStatus);
+// Careers page: open roles and the public apply form.
+router.get('/v1/careers/jobs', careersController.listJobs);
+router.get('/v1/careers/jobs/:slug', careersController.getJob);
+router.post('/v1/careers/apply', careersApplyRateLimiter, careersController.parseResume, careersController.apply);
 
 router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), restaurantAdminRoutes);
 router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);

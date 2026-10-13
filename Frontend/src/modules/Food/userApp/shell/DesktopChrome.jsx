@@ -52,7 +52,7 @@ export function TopBar() {
 
 export function Footer() {
   const cols = [
-    ["Company", [["About Craviox", "/food/user/profile/about"], ["Terms & Conditions", "/terms"], ["Privacy Policy", "/privacy"]]],
+    ["Company", [["About Craviox", "/food/user/profile/about"], ["Careers", "/careers"], ["Terms & Conditions", "/terms"], ["Privacy Policy", "/privacy"]]],
     ["Contact us", [["Help & Support", "/food/user/help"], ["Partner with us", "/food/restaurant/welcome"], ["Ride with us", "/food/delivery/welcome"]]],
     ["For you", [["Offers", "/food/user/offers"], ["Your orders", "/food/user/orders"]]],
   ]

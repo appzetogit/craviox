@@ -37,6 +37,8 @@ const RedirectToFood = () => {
 
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
 const PublicCMSPage = lazy(() => import('./PublicCMSPage'))
+const CareersPage = lazy(() => import('./careers/CareersPages').then((m) => ({ default: m.CareersPage })))
+const CareerJobPage = lazy(() => import('./careers/CareersPages').then((m) => ({ default: m.CareerJobPage })))
 
 const publicPage = (page, module) => (
   <Suspense fallback={<PageLoader />}>
@@ -75,6 +77,9 @@ const AppRoutes = () => {
 
       {/* Public support + legal pages: no login, content managed in admin */}
       <Route path="/support" element={publicPage('support')} />
+      {/* Careers: roles and applications are managed in Admin → Careers */}
+      <Route path="/careers" element={<Suspense fallback={<PageLoader />}><CareersPage /></Suspense>} />
+      <Route path="/careers/:slug" element={<Suspense fallback={<PageLoader />}><CareerJobPage /></Suspense>} />
       <Route path="/privacy" element={publicPage('privacy')} />
       <Route path="/terms" element={publicPage('terms')} />
       {/* Exact paths outrank the /restaurant/* and /delivery/* redirects below */}
