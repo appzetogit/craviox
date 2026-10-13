@@ -211,19 +211,22 @@ function MobileHome() {
     else navigate(dest.startsWith("/") ? dest : `/${dest}`)
   }
 
-  const outOfZone =
-    Number.isFinite(Number(effectiveLocation?.latitude)) && zoneStatus === "OUT_OF_SERVICE" && !zoneLoading
-  if (outOfZone) return <OutOfZoneScreen location={effectiveLocation} />
-
   const hasCoords = Number.isFinite(Number(effectiveLocation?.latitude)) && Number.isFinite(Number(effectiveLocation?.longitude))
   // Once the prompt is up it stays until a location arrives, so asking for
   // GPS from inside it does not make it vanish mid-request.
+  // These hooks must stay above the out-of-zone return: hooks that only run
+  // on some renders crash React when the zone status flips.
   const [promptLatched, setPromptLatched] = useState(false)
   useEffect(() => {
     if (hasCoords) setPromptLatched(false)
     else if (!zoneLoading && !locating) setPromptLatched(true)
   }, [hasCoords, zoneLoading, locating])
   const needsLocation = !hasCoords && (promptLatched || (!zoneLoading && !locating))
+
+  const outOfZone =
+    Number.isFinite(Number(effectiveLocation?.latitude)) && zoneStatus === "OUT_OF_SERVICE" && !zoneLoading
+  if (outOfZone) return <OutOfZoneScreen location={effectiveLocation} />
+
   const failed = restaurants.error && !restaurants.list.length
   const loading = restaurants.loading && !restaurants.list.length
   const fade = "var(--ca-bg)"
