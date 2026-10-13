@@ -13,6 +13,7 @@ import { responseTimeLogger } from './middleware/responseTimeLogger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { healthCheck } from './config/health.js';
 import { config } from './config/env.js';
+import { logger } from './utils/logger.js';
 
 const app = express();
 
@@ -93,6 +94,22 @@ app.use('/api', signMediaResponses);
 
 // Global rate limiting for API routes
 app.use('/api', apiRateLimiter);
+
+/**
+ * Crash reports from the web app's error screen. There is no reporting
+ * service, so a customer's crash otherwise leaves no trace on the server.
+ * Public by design: it only writes a capped log line (the /api rate limiter
+ * above applies); nothing is stored or echoed back.
+ */
+app.post('/api/v1/client-errors', (req, res) => {
+    const clip = (v, n) => String(v ?? '').slice(0, n);
+    const b = req.body && typeof req.body === 'object' ? req.body : {};
+    logger.error(
+        `[client-error] ${clip(b.message, 300)} | url=${clip(b.url, 200)} | ua=${clip(req.headers['user-agent'], 160)}\n` +
+        `${clip(b.stack, 1500)}\n${clip(b.componentStack, 1500)}`,
+    );
+    res.status(204).end();
+});
 
 // API Routes
 app.use('/api', routes);

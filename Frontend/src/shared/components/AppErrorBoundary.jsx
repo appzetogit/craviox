@@ -52,9 +52,25 @@ export default class AppErrorBoundary extends Component {
     }
 
     componentDidCatch(error, info) {
-        // Left as console output on purpose: there is no error reporting service
-        // wired up yet, and losing the stack entirely is worse than a log.
         console.error('Unhandled render error:', error, info?.componentStack)
+        // Also to the server log, so a crash on a customer's phone can be seen
+        // and fixed (POST /api/v1/client-errors only logs it).
+        try {
+            const base = String(import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '')
+            fetch(`${base}/client-errors`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
+                body: JSON.stringify({
+                    message: String(error?.message || error),
+                    stack: String(error?.stack || '').slice(0, 1500),
+                    componentStack: String(info?.componentStack || '').slice(0, 1500),
+                    url: window.location.pathname + window.location.search,
+                }),
+            }).catch(() => {})
+        } catch {
+            // Reporting must never make the crash screen itself fail.
+        }
     }
 
     render() {
