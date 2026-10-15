@@ -195,6 +195,22 @@ export default function AppStatus() {
     [configs, saved, active],
   )
 
+  // Every app with edits that are not saved yet, so switching tabs never hides them.
+  const unsavedApps = APPS.filter((a) => configs[a.key] && JSON.stringify(configs[a.key]) !== JSON.stringify(saved[a.key] || null))
+
+  // Changes only reach the apps on Save; warn before they are lost.
+  useEffect(() => {
+    if (!unsavedApps.length) return undefined
+    const warn = (e) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [unsavedApps.length])
+
+  const discard = () => setConfigs((prev) => ({ ...prev, [active]: saved[active] }))
+
   const set = (patch) => setConfigs((prev) => ({ ...prev, [active]: { ...prev[active], ...patch } }))
   const setNested = (key, patch) =>
     setConfigs((prev) => ({ ...prev, [active]: { ...prev[active], [key]: { ...prev[active][key], ...patch } } }))
@@ -221,7 +237,19 @@ export default function AppStatus() {
       const next = res?.data?.data?.config || configs[active]
       setConfigs((prev) => ({ ...prev, [active]: next }))
       setSaved((prev) => ({ ...prev, [active]: next }))
-      toast.success(`${appMeta.label} updated.`)
+      const live = next.mode === "live"
+      toast.success(
+        live
+          ? `${appMeta.label} is live.`
+          : `${appMeta.label} now shows the ${next.mode === "maintenance" ? "maintenance" : "coming soon"} screen.`,
+        {
+          description:
+            active === "web"
+              ? "Visitors see it on their next page load (open tabs within 2 minutes)."
+              : "Shown in app versions that include App Status, on next open.",
+          ...(active === "web" ? { action: { label: "Open site", onClick: () => window.open("/home", "_blank", "noopener") } } : {}),
+        },
+      )
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to save.")
     } finally {
@@ -528,6 +556,29 @@ export default function AppStatus() {
 
         <Preview config={config} appLabel={appMeta.label} />
       </div>
+
+      {unsavedApps.length ? (
+        <div className="sticky bottom-4 z-30 mx-auto flex max-w-3xl flex-wrap items-center gap-3 rounded-2xl border border-orange-200 bg-white px-4 py-3 shadow-xl">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#F54A00]" />
+          <div className="min-w-0 flex-1 text-sm">
+            <div className="font-semibold text-gray-900">Not saved yet</div>
+            <div className="text-gray-600">
+              {unsavedApps.map((a) => a.label).join(", ")} {unsavedApps.length === 1 ? "has" : "have"} changes that customers won't see until you save.
+            </div>
+          </div>
+          {dirty ? (
+            <>
+              <Button variant="outline" onClick={discard} disabled={saving}>Discard</Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save {appMeta.label}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => setActive(unsavedApps[0].key)}>Go to {unsavedApps[0].label}</Button>
+          )}
+        </div>
+      ) : null}
     </div>
   )
 }
