@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feature/memberships",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "feature/memberships": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "feature/memberships",
+    "origin"
+  ]
+}
