@@ -16,8 +16,9 @@
  *   node scripts/seed-craviox-demo.mjs
  */
 import 'dotenv/config';
-import { mkdir, writeFile, access } from 'node:fs/promises';
+import { mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 import { prisma } from '../src/config/prisma.js';
 import { deriveRestaurantFields, fromRestaurantLocation } from '../src/modules/food/restaurant/restaurant.mapper.js';
 
@@ -31,56 +32,58 @@ const HEADERS = { 'User-Agent': 'CravioxDemoSeed/1.0 (food delivery demo data)' 
 
 // ── Images ─────────────────────────────────────────────────────────────────
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const categoryPools = new Map();
-let poolCursor = 0;
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Wikipedia answers 429 to bursts, so pace every lookup and back off when told to.
-const getJson = async (url) => {
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-        await sleep(attempt ? 2000 * attempt : 300);
+// Wikimedia answers 429 to anything faster than about one request a second,
+// so pace every request and back off hard when told to.
+const request = async (url) => {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        await sleep(attempt ? 5000 * attempt : 1200);
         try {
-            const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(15000) });
-            if (res.status === 429) continue;
-            return res.ok ? await res.json() : null;
-        } catch {
-            return null;
-        }
+            const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(30000) });
+            if (res.status === 429 || res.status >= 500) continue;
+            return res;
+        } catch { /* network blip: retry */ }
     }
     return null;
 };
 
-/** Wikipedia lead photo at ~800px wide, or candidates to try in order. */
-const wikiPhotos = async (title) => {
-    if (!title) return [];
-    const page = await getJson(`${WIKI}/${encodeURIComponent(title.replace(/ /g, '_'))}`);
-    const thumb = page?.thumbnail?.source;
-    const original = page?.originalimage?.source;
-    // Skip drawings and logos (svg/png): only photographs look like food
-    if (!thumb || /\.(svg|png|gif)/i.test(original || thumb)) return [];
-    return [thumb.replace(/\/\d+px-/, '/800px-'), original, thumb].filter(Boolean);
+const getJson = async (url) => {
+    const res = await request(url);
+    return res?.ok ? res.json() : null;
 };
 
-/** MealDB: exact search first, then a pick from a MealDB category. */
-const mealDbPhoto = async (term, fallbackCategory) => {
-    const hit = await getJson(`${MEALDB}/search.php?s=${encodeURIComponent(term)}`);
-    if (hit?.meals?.[0]?.strMealThumb) return hit.meals[0].strMealThumb;
-
-    if (!categoryPools.has(fallbackCategory)) {
-        const list = await getJson(`${MEALDB}/filter.php?c=${encodeURIComponent(fallbackCategory)}`);
-        categoryPools.set(fallbackCategory, (list?.meals || []).map((m) => m.strMealThumb));
+const wikiCache = new Map();
+/** Wikipedia lead photo URL for an article, or null. */
+const wikiPhoto = async (title) => {
+    if (!title) return null;
+    if (!wikiCache.has(title)) {
+        const page = await getJson(`${WIKI}/${encodeURIComponent(title.replace(/ /g, '_'))}`);
+        const src = page?.originalimage?.source || page?.thumbnail?.source || null;
+        // Drawings and logos (svg/png/gif) never look like food
+        wikiCache.set(title, src && !/\.(svg|png|gif)(\?|$)/i.test(src) ? src : null);
     }
-    const pool = categoryPools.get(fallbackCategory);
-    return pool.length ? pool[poolCursor++ % pool.length] : null;
+    return wikiCache.get(title);
 };
 
+/** MealDB photo only when a meal of exactly this name exists -- a near miss shows the wrong dish. */
+const mealDbPhoto = async (term) => {
+    const hit = await getJson(`${MEALDB}/search.php?s=${encodeURIComponent(term)}`);
+    const meal = hit?.meals?.find((m) => m.strMeal.toLowerCase() === String(term).toLowerCase());
+    return meal?.strMealThumb || null;
+};
+
+/** Saves the photo as an 800px-wide JPEG, so phones never pull a 4K original. */
 const download = async (url, target) => {
+    const res = await request(url);
+    const type = res?.headers.get('content-type') || '';
+    if (!res?.ok || !type.startsWith('image/')) return false;
     try {
-        const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20000) });
-        const type = res.headers.get('content-type') || '';
-        if (!res.ok || !type.startsWith('image/')) return false;
-        await writeFile(target, Buffer.from(await res.arrayBuffer()));
+        await sharp(Buffer.from(await res.arrayBuffer()))
+            .rotate()
+            .resize({ width: 800, height: 800, fit: 'cover', withoutEnlargement: true })
+            .jpeg({ quality: 82, mozjpeg: true })
+            .toFile(target);
         return true;
     } catch {
         return false;
@@ -88,7 +91,7 @@ const download = async (url, target) => {
 };
 
 /** Downloads once into uploads/seed and returns the public /uploads path ('' on failure). */
-const image = async (key, wikiTitle, term, fallbackCategory = 'Miscellaneous') => {
+const image = async (key, wikiTitle, term) => {
     const file = `${slug(key)}.jpg`;
     const target = path.join(SEED_DIR, file);
     const publicPath = `/uploads/seed/${file}`;
@@ -99,10 +102,9 @@ const image = async (key, wikiTitle, term, fallbackCategory = 'Miscellaneous') =
         } catch { /* not downloaded yet */ }
     }
 
-    for (const url of await wikiPhotos(wikiTitle)) {
-        if (await download(url, target)) return publicPath;
-    }
-    const url = await mealDbPhoto(term, fallbackCategory);
+    const wiki = await wikiPhoto(wikiTitle);
+    if (wiki && await download(wiki, target)) return publicPath;
+    const url = await mealDbPhoto(term);
     if (url && await download(url, target)) {
         console.warn(`  image for "${key}" fell back to TheMealDB`);
         return publicPath;
