@@ -20,9 +20,11 @@ const complete = (over = {}) => ({
     razorpayKeyId: 'k',
     razorpayKeySecret: 's',
     razorpayWebhookSecret: 'w',
-    smsApiKey: 'sms',
+    smsIndiaHubUsername: 'user',
+    smsIndiaHubPassword: 'pass',
     smsSenderId: 'sender',
     smsDltTemplateId: 'dlt',
+    smsPeId: 'pe',
     firebaseServiceAccount: '{}',
     ...over,
 });
@@ -52,7 +54,7 @@ test('the OTP bypass is allowed outside production', () => {
 test('each production secret is reported by name, with what it breaks', () => {
     for (const field of [
         'razorpayKeyId', 'razorpayKeySecret', 'razorpayWebhookSecret',
-        'smsApiKey', 'smsSenderId', 'smsDltTemplateId',
+        'smsIndiaHubUsername', 'smsIndiaHubPassword', 'smsSenderId', 'smsDltTemplateId', 'smsPeId',
     ]) {
         const problems = findConfigProblems(complete({ [field]: undefined }));
         assert.equal(problems.length, 1, `dropping ${field} should be the only problem`);

@@ -52,9 +52,15 @@ export const config = {
 
     // SMS India Hub
     smsIndiaHubUsername: process.env.SMS_INDIA_HUB_USERNAME,
-    smsApiKey: process.env.SMS_INDIA_HUB_API_KEY,
+    smsIndiaHubPassword: process.env.SMS_INDIA_HUB_PASSWORD,
     smsSenderId: process.env.SMS_INDIA_HUB_SENDER_ID,
     smsDltTemplateId: process.env.SMS_INDIA_HUB_DLT_TEMPLATE_ID,
+    smsPeId: process.env.SMS_INDIA_HUB_PE_ID,
+    smsChannel: process.env.SMS_INDIA_HUB_CHANNEL || 'Trans',
+    smsRoute: process.env.SMS_INDIA_HUB_ROUTE || '',
+    // The two ##var## slots before the OTP in the approved DLT template
+    smsAppName: process.env.SMS_APP_NAME || 'Craviox',
+    smsPoweredBy: process.env.SMS_POWERED_BY || 'Craviox',
 
     // Rate limiting
     rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
