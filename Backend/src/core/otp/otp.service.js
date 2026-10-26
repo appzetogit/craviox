@@ -22,24 +22,26 @@ const sendSmsViaIndiaHub = async (phone, otp) => {
         const digits = String(phone || '').replace(/\D/g, '');
         const msisdn = digits.startsWith('91') ? digits : `91${digits}`;
 
-        // EXACT DLT TEMPLATE provided by user:
-        // "Welcome to the ##var## powered by SMSINDIAHUB. Your OTP for registration is ##var##"
-        const message = `Welcome to the Craviox powered by Appzeto.Your OTP for registration is ${otp}.BGADEC.`;
+        // Must match the approved DLT template ("App Login", BGADPL) character for character:
+        // "Welcome to ##var##, powered by ##var##. Your OTP for registration ##var##. This OTP is valid for 10 minutes. Please do not share it with anyone.BGADPL"
+        const message = `Welcome to ${config.smsAppName}, powered by ${config.smsPoweredBy}. Your OTP for registration ${otp}. This OTP is valid for 10 minutes. Please do not share it with anyone.BGADPL`;
 
-        // SMS India Hub HTTP GET API — query param names are case-sensitive per SOP
-        const url = new URL('http://cloud.smsindiahub.in/vendorsms/pushsms.aspx');
-        url.searchParams.append('APIKey', config.smsApiKey);
-        url.searchParams.append('sid', config.smsSenderId);
-        url.searchParams.append('msisdn', msisdn);
-        url.searchParams.append('msg', message);
-        url.searchParams.append('gwid', '2');
-        url.searchParams.append('fl', '0');
-        if (config.smsIndiaHubUsername) {
-            url.searchParams.append('uname', config.smsIndiaHubUsername);
+        // SMS India Hub SendSMS API — query param names are case-sensitive
+        const url = new URL('http://cloud.smsindiahub.in/api/mt/SendSMS');
+        url.searchParams.append('user', config.smsIndiaHubUsername || '');
+        url.searchParams.append('password', config.smsIndiaHubPassword || '');
+        url.searchParams.append('senderid', config.smsSenderId || '');
+        url.searchParams.append('channel', config.smsChannel);
+        url.searchParams.append('DCS', '0');
+        url.searchParams.append('flashsms', '0');
+        url.searchParams.append('number', msisdn);
+        url.searchParams.append('text', message);
+        url.searchParams.append('DLTTemplateId', config.smsDltTemplateId || '');
+        // An empty route= makes the provider throw (ErrorCode 25); omit it unless one is assigned
+        if (config.smsRoute) {
+            url.searchParams.append('route', config.smsRoute);
         }
-        if (config.smsDltTemplateId) {
-            url.searchParams.append('DLT_TE_ID', config.smsDltTemplateId);
-        }
+        url.searchParams.append('PEId', config.smsPeId || '');
 
         logger.info(`[SMS] Sending OTP to ${msisdn} via SMS India Hub...`);
         const response = await fetch(url.toString());
