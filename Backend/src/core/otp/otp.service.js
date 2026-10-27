@@ -80,9 +80,17 @@ const sendSmsViaIndiaHub = async (phone, otp) => {
     }
 };
 
+/** True for the app-review numbers in REVIEW_OTP_PHONES, in any phone format. */
+export const isReviewPhone = (phone) => {
+    const last10 = String(phone || '').replace(/\D/g, '').slice(-10);
+    return last10.length === 10 && config.reviewOtpPhones.includes(last10);
+};
+
 export const createOrUpdateOtp = async (phone) => {
     const existing = await prisma.foodOtp.findUnique({ where: { phone } });
     const now = new Date();
+    // Reviewers retry often and have no SIM to receive the code
+    const review = isReviewPhone(phone);
 
     const windowMs = (config.otpRateWindow || 600) * 1000;
     const decision = evaluateOtpRateWindow(existing, now, {
@@ -91,7 +99,7 @@ export const createOrUpdateOtp = async (phone) => {
     });
     const windowStartedAt = decision.windowStartedAt;
 
-    if (!decision.allowed) {
+    if (!decision.allowed && !review) {
         logger.warn(
             `OTP rate limit exceeded for phone ${phone} — retry in ${decision.retryAfterSeconds}s`,
         );
@@ -102,7 +110,10 @@ export const createOrUpdateOtp = async (phone) => {
     }
 
     let otp;
-    if (config.useDefaultOtp) {
+    if (review) {
+        otp = config.reviewOtp;
+        logger.info(`Review number ${phone}: fixed OTP, no SMS`);
+    } else if (config.useDefaultOtp) {
         otp = '1234';
         logger.info(`Default OTP mode enabled – OTP is ${otp} for phone ${phone}`);
     } else {
@@ -149,7 +160,7 @@ export const createOrUpdateOtp = async (phone) => {
     });
 
     // Only send SMS if not in default OTP mode
-    if (!config.useDefaultOtp) {
+    if (!config.useDefaultOtp && !review) {
         await sendSmsViaIndiaHub(phone, otp);
     }
 

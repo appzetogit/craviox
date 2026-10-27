@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { prisma } from '../../config/prisma.js';
-import { createOrUpdateOtp, verifyOtp } from './otp.service.js';
+import { config } from '../../config/env.js';
+import { createOrUpdateOtp, isReviewPhone, verifyOtp } from './otp.service.js';
 import { findOrCreateUserByPhone } from '../users/user.service.js';
 import { hashAdminPassword, compareAdminPassword } from '../auth/adminPassword.util.js';
 import { uniquePhone } from '../../utils/testIds.js';
@@ -93,6 +94,23 @@ test('parallel wrong guesses each cost an attempt', async () => {
 
     const row = await prisma.foodOtp.findUnique({ where: { phone: p } });
     assert.equal(row.attempts, 3);
+});
+
+test('a review number always gets the fixed code, with no SMS and no quota', async (t) => {
+    const p = phone();
+    const saved = { ...config };
+    t.after(() => Object.assign(config, saved));
+    // Real-SMS mode, so the fixed code can only come from the review list
+    Object.assign(config, { useDefaultOtp: false, reviewOtp: '4321', reviewOtpPhones: [p] });
+
+    // Apps send +91 and spaces; the list holds bare 10 digits
+    const formatted = `+91 ${p.slice(0, 5)} ${p.slice(5)}`;
+    assert.equal(isReviewPhone(formatted), true);
+    assert.equal(isReviewPhone(phone()), false);
+
+    // Past the 3-per-window limit a reviewer retrying must still get in
+    for (let i = 0; i < 5; i += 1) assert.equal(await issue(p), '4321');
+    assert.deepEqual(await verifyOtp(p, '4321'), { valid: true });
 });
 
 test('verifying an unknown phone is not an error', async () => {
