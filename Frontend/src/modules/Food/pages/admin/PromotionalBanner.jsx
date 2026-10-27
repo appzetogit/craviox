@@ -74,8 +74,9 @@ export default function PromotionalBanner() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image size must be 2MB or less")
+    // The server resizes on save; nginx allows 30M and the API 25MB per file
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Image size must be 20MB or less")
       return
     }
 
@@ -374,7 +375,7 @@ export default function PromotionalBanner() {
                       )}
                       <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                    <p className="text-[10px] text-slate-400">JPEG, PNG or WebP. Max 2MB.</p>
+                    <p className="text-[10px] text-slate-400">JPEG, PNG or WebP. Max 20MB.</p>
                   </div>
 
                   <div className="space-y-4">
