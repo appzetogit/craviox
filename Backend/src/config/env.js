@@ -49,6 +49,13 @@ export const config = {
     otpRateLimit: Number(process.env.OTP_RATE_LIMIT || 3),
     otpRateWindow: Number(process.env.OTP_RATE_WINDOW || 600),
     useDefaultOtp: process.env.USE_DEFAULT_OTP === 'true',
+    // App Store / Play review logins: these numbers (last 10 digits, comma
+    // separated) always get REVIEW_OTP and no SMS, whatever USE_DEFAULT_OTP says.
+    reviewOtpPhones: String(process.env.REVIEW_OTP_PHONES || '')
+        .split(',')
+        .map((p) => p.replace(/\D/g, '').slice(-10))
+        .filter((p) => p.length === 10),
+    reviewOtp: process.env.REVIEW_OTP || '1234',
 
     // SMS India Hub
     smsIndiaHubUsername: process.env.SMS_INDIA_HUB_USERNAME,
