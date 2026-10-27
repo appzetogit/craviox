@@ -662,8 +662,8 @@ export default function LandingPageManagement() {
           setError('Only image files are allowed for categories')
           return false
         }
-        if (file.size > 5 * 1024 * 1024) {
-          setError('Each image must be smaller than 5MB')
+        if (file.size > 20 * 1024 * 1024) {
+          setError('Each image must be 20MB or smaller')
           return false
         }
         return true
@@ -869,8 +869,8 @@ export default function LandingPageManagement() {
       setError('Please select an image file')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size exceeds 5MB')
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Image size exceeds 20MB')
       return
     }
 
@@ -1640,7 +1640,7 @@ export default function LandingPageManagement() {
                       </button>
                       <span className="text-slate-600"> or drag and drop</span>
                     </div>
-                    <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB each (Max 5 images at once)</p>
+                    <p className="text-xs text-slate-500">PNG, JPG, WEBP or GIF up to 25MB each (Max 5 images at once)</p>
                   </div>
                 )}
               </div>
@@ -1810,7 +1810,7 @@ export default function LandingPageManagement() {
                       </button>
                       <span className="text-slate-600"> or drag and drop</span>
                     </div>
-                    <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB each (Max 5 images at once)</p>
+                    <p className="text-xs text-slate-500">PNG, JPG, WEBP or GIF up to 25MB each (Max 5 images at once)</p>
                   </div>
                 )}
               </div>
@@ -1956,7 +1956,7 @@ export default function LandingPageManagement() {
                       </button>
                       <span className="text-slate-600"> or drag and drop</span>
                     </div>
-                    <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB each (Max 5 images at once)</p>
+                    <p className="text-xs text-slate-500">PNG, JPG, WEBP or GIF up to 25MB each (Max 5 images at once)</p>
                   </div>
                 )}
               </div>
@@ -2072,7 +2072,7 @@ export default function LandingPageManagement() {
                       </button>
                       <span className="text-slate-600"> or drag and drop</span>
                     </div>
-                    <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB each (Max 5 images at once)</p>
+                    <p className="text-xs text-slate-500">PNG, JPG, WEBP or GIF up to 25MB each (Max 5 images at once)</p>
                   </div>
                 )}
               </div>

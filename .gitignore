@@ -5,3 +5,5 @@ suvio-api.conf
 
 # Private server access + project notes. Never commit.
 SERVER_NOTES.md
+config.bat
+node_modules
